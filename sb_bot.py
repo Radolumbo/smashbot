@@ -34,6 +34,9 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    channel = message.channel
+    author = message.author
+    
     if author == client.user:
         return
 
