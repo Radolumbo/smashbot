@@ -23,8 +23,11 @@ db = mysql.connector.connect(
 client = discord.Client()
 
 command_center = CommandCenter()
+command_center.register_command("help", funcs.help)
 command_center.register_command("register", funcs.register)
 command_center.register_command("playerlist", funcs.player_list)
+command_center.register_command("profile", funcs.profile)
+command_center.register_command("whois", funcs.who_is)
 command_center.register_command("olimariscool", funcs.olimar_is_cool)
 
 @client.event
