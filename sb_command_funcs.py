@@ -1,7 +1,32 @@
 import discord
 import asyncio
 import mysql.connector
- 
+import sb_messaging_utils as msg_utils
+from sb_messaging_utils import embed_color
+
+help_commands = '''\
+8!register
+8!playerlist
+8!profile
+8!whois\
+'''
+help_descriptions = '''\
+Register in player list
+List players in server
+View profile of player
+Lookup player by switch tag\
+'''
+async def help(client, message, db):
+    channel = message.channel
+    author = message.author
+
+    embed = discord.Embed(color=embed_color)
+    embed.set_author(name='Help Text', icon_url=channel.guild.icon_url)
+    embed.add_field(name='Command', value=help_commands, inline=True)
+    embed.add_field(name='Description', value=help_descriptions, inline=True)
+
+    await channel.send(embed = embed)
+
 async def register(client, message, db):
     channel = message.channel
     author = message.author
@@ -24,7 +49,7 @@ async def register(client, message, db):
 
     # First time registration, wrong number of arguments
     if(not is_registered and len(tokens) != 3):
-        await channel.send('8!register usage: 8!register <tag> <code>')
+        await channel.send('8!register usage: 8!register <swich_tag> <switch_code>')
         return
     # First time registration, wrong switch code format
     #TODO: consider switching to regex for efficiency
@@ -68,6 +93,7 @@ async def register(client, message, db):
 
 async def player_list(client, message, db):
     channel = message.channel
+    author = message.author
     cursor = db.cursor()
     cursor.execute('''
         SELECT
@@ -77,13 +103,71 @@ async def player_list(client, message, db):
             ON p.discord_id = g.player_discord_id
         WHERE g.guild_id = {}'''.format(channel.guild.id))
     
-    txt = 'Players in server:\n\n'
+    names = ''
+    tags = ''
+    codes = ''
 
     for row in cursor:
         # TODO: guild is optional? maybe in PMs?
-        txt += '{}\'s tag: {} and code: {}\n'.format(message.guild.get_member(int(row[0])).display_name, row[1], row[2])
+        #names += '{:<20}{:<22}\n'.format(message.guild.get_member(int(row[0])).display_name[:20], row[2])
+        names += '{}\n'.format(message.guild.get_member(int(row[0])).display_name)
+        #tags += '{}\n'.format(row[1])
+        codes += '{}\n'.format(row[2])
 
-    await channel.send(txt)
+    embed = discord.Embed(color=embed_color)
+    embed.set_author(name='Players in {}'.format(message.guild))
+    embed.set_thumbnail(url=channel.guild.icon_url)
+    #embed.add_field(name='{:<45}{:<17}'.format('Name', 'Switch Code'), value='```{}```'.format(names), inline=True)
+    embed.add_field(name='Name', value=names, inline=True)
+    embed.add_field(name='Switch Code', value=codes, inline=True)
+
+    await channel.send(embed=embed)
+
+async def profile(client, message, db):
+    channel = message.channel
+    author = message.author
+
+    if len(message.mentions) != 1:
+        await channel.send('8!profile usage: 8!profile @mention')
+        return
+
+    mention = message.mentions[0]
+
+    await msg_utils.send_profile(channel, db, mention)
+
+async def who_is(client, message, db):
+    channel = message.channel
+    author = message.author
+
+    tokens = message.content.split(' ')
+
+    if len(tokens) != 2:
+        await channel.send('8!whois usage: 8!whois <switch_tag>')
+        return
+
+    lookup = tokens[1]
+
+    # TODO: UNSAFE, SANITIZE INPUT
+    cursor = db.cursor()
+    cursor.execute('''
+        SELECT
+            discord_id
+        FROM player p  
+        INNER JOIN guild_member g
+            ON p.discord_id = g.player_discord_id
+        WHERE g.guild_id = {} AND p.switch_tag = \'{}\''''.format(channel.guild.id, lookup))
+
+    count = 0
+    await channel.send('I found the following profiles matching the Switch tag {}:'.format(lookup))
+    for row in cursor:
+        user = message.guild.get_member(int(row[0]))
+        await msg_utils.send_profile(channel, db, user)
+        count += 1
+        return
+    
+    if(count == 0):
+        await channel.send('None found.')
+
 
 async def olimar_is_cool(client, message, db):
     channel = message.channel
