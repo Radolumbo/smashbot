@@ -11,9 +11,9 @@ class CommandCenter:
         command = Command(name, func)
         self.commands[name] = command
 
-    async def run_command(self, name, message, db):
+    async def run_command(self, name, client, message, db):
         if name in self.commands:
-            await self.commands[name].run(message, db)
+            await self.commands[name].run(client, message, db)
             return True
 
         return False
