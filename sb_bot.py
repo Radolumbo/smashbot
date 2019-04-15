@@ -44,7 +44,7 @@ async def on_message(message):
         return
 
     command_name = message.content.split(' ')[0][2:]
-    command_exists = await command_center.run_command(command_name, message, db)
+    command_exists = await command_center.run_command(command_name, client, message, db)
 
     if(not command_exists):
         await channel.send("Command not recognized, {}".format(author.mention))

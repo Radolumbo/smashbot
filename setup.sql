@@ -1,9 +1,18 @@
 CREATE TABLE player
 (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    discord_id INT NOT NULL,
+    discord_id BIGINT UNIQUE NOT NULL,
     switch_tag NVARCHAR(255) NULL,
     switch_code NVARCHAR(25) NULL
+);
+
+CREATE TABLE guild_member
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_discord_id BIGINT NOT NULL,
+    guild_id BIGINT NOT NULL,
+    FOREIGN KEY (player_discord_id)
+        REFERENCES player(discord_id)
 );
 
 CREATE TABLE fighter

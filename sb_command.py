@@ -7,8 +7,8 @@ class Command:
     def check(self, string):
         return string == self.name
 
-    async def run(self, message, db):
-        await self.func(message, db)
+    async def run(self, client, message, db):
+        await self.func(client, message, db)
 
     async def check_and_run(self, string):
         if self.check(string):
