@@ -1,24 +1,7 @@
-CREATE TABLE player
-(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    discord_id BIGINT UNIQUE NOT NULL,
-    switch_tag NVARCHAR(255) NULL,
-    switch_code NVARCHAR(25) NULL
-);
-
-CREATE TABLE guild_member
-(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    player_discord_id BIGINT NOT NULL,
-    guild_id BIGINT NOT NULL,
-    FOREIGN KEY (player_discord_id)
-        REFERENCES player(discord_id)
-);
-
 CREATE TABLE fighter
 (
-    id int AUTO_INCREMENT PRIMARY KEY,
-    name NVARCHAR(255) NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name NVARCHAR(255) NULL, 
     weight INT NULL,
     echo_of_id INT NULL
 );
@@ -99,8 +82,7 @@ VALUES
     ('Richter'), 
     ('King K. Rool'), 
     ('Isabelle'), 
-    ('Incineroar'), 
-    ('Piranha Plant');
+    ('Incineroar');
 
 UPDATE fighter f1
 JOIN fighter f2

@@ -168,6 +168,8 @@ async def who_is(client, message, db):
     if(count == 0):
         await channel.send('None found.')
 
+async def i_main(client, message, db):
+    pass
 
 async def olimar_is_cool(client, message, db):
     channel = message.channel

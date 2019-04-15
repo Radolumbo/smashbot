@@ -1,0 +1,1 @@
+embed_color = 0x562906
