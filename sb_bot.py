@@ -5,6 +5,9 @@ import json
 from sb_commandcenter import *
 import sb_command_funcs as funcs
 import mysql.connector
+from sb_command import Command
+from sb_channelcommand import ChannelCommand
+from sb_constants import *
 
 SECRET_CONFIG_FILE = './super_secret_config.json'
 
@@ -23,12 +26,12 @@ db = mysql.connector.connect(
 client = discord.Client()
 
 command_center = CommandCenter()
-command_center.register_command("help", funcs.help)
-command_center.register_command("register", funcs.register)
-command_center.register_command("playerlist", funcs.player_list)
-command_center.register_command("profile", funcs.profile)
-command_center.register_command("whois", funcs.who_is)
-command_center.register_command("olimariscool", funcs.olimar_is_cool)
+command_center.register_command(Command("help", funcs.help))
+command_center.register_command(ChannelCommand("register", funcs.register))
+command_center.register_command(ChannelCommand("playerlist", funcs.player_list))
+command_center.register_command(ChannelCommand("profile", funcs.profile))
+command_center.register_command(ChannelCommand("whois", funcs.who_is))
+command_center.register_command(ChannelCommand("olimariscool", funcs.olimar_is_cool))
 
 @client.event
 async def on_ready():
@@ -47,10 +50,11 @@ async def on_message(message):
         return
 
     command_name = message.content.split(' ')[0][2:]
-    command_exists = await command_center.run_command(command_name, client, message, db)
+    rc = await command_center.run_command(command_name, client, message, db)
 
-    if(not command_exists):
+    if(rc == RC_COMMAND_DNE):
         await channel.send("Command not recognized, {}".format(author.mention))
-        
+    elif(rc == RC_CHANNEL_ONLY):
+        await channel.send("That command only works in channels.")
 
 client.run(NSA_IS_WATCHING["discord_token"])

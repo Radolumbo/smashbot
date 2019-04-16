@@ -13,3 +13,6 @@ class Command:
     async def check_and_run(self, string):
         if self.check(string):
             await self.run()
+
+    def channel_only(self):
+        return False
