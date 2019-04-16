@@ -34,15 +34,15 @@ async def register(client, message, db):
     cursor = db.cursor()
 
     # Verify user hasn't registered for this server
-    query = 'SELECT COUNT(1) FROM guild_member WHERE player_discord_id = {} AND guild_id = {}'.format(author.id, channel.guild.id)
-    cursor.execute(query)
+    query = 'SELECT COUNT(1) FROM guild_member WHERE player_discord_id = %s AND guild_id = %s'
+    cursor.execute(query, (author.id, channel.guild.id))
     if(cursor.fetchone()[0] > 0):
         await channel.send('{}, you\'re already registered in this channel, silly!'.format(author.mention))
         return
 
     # See if user has been registered at all
-    query = 'SELECT COUNT(1) FROM player WHERE discord_id = {}'.format(author.id)
-    cursor.execute(query)
+    query = 'SELECT COUNT(1) FROM player WHERE discord_id = %s'
+    cursor.execute(query, (author.id))
     is_registered = (cursor.fetchone()[0] > 0)
 
     # Tokenize input
@@ -62,9 +62,8 @@ async def register(client, message, db):
         tag = tokens[1]
         code = tokens[2]
 
-        #TODO: VERY UNSAFE. SANITIZE INPUT.
-        query = 'INSERT INTO player (discord_id, switch_tag, switch_code) VALUES ({},\'{}\',\'{}\')' \
-            .format(author.id, tag, code)
+        query = 'INSERT INTO player (discord_id, switch_tag, switch_code) VALUES (%s,%s,%s)'
+
 
         await channel.send('Registering {} as {} with Switch code {}. Is this good? (Y/N)' \
             .format(author.mention, tag, code))
@@ -78,7 +77,7 @@ async def register(client, message, db):
                 await channel.send('Not registering {}.'.format(author.mention))
                 return
             
-            cursor.execute(query)    
+            cursor.execute(query, (author.id, tag, code))    
             db.commit()
             await channel.send('Registered {.author.mention} in the player database!'.format(msg))
         except asyncio.TimeoutError:
@@ -86,9 +85,8 @@ async def register(client, message, db):
             return
     
     # Already registered or just registered, add them to this channel
-    query = 'INSERT INTO guild_member (player_discord_id, guild_id) VALUES ({},{})' \
-            .format(author.id, channel.guild.id)
-    cursor.execute(query)
+    query = 'INSERT INTO guild_member (player_discord_id, guild_id) VALUES (%s,%s)'
+    cursor.execute(query, (author.id, channel.guild.id))
     db.commit()
     await channel.send('Registered {.author.mention} in this server!'.format(message))
 
@@ -96,13 +94,8 @@ async def player_list(client, message, db):
     channel = message.channel
     author = message.author
     cursor = db.cursor()
-    cursor.execute('''
-        SELECT
-            discord_id, switch_tag, switch_code
-        FROM player p  
-        INNER JOIN guild_member g
-            ON p.discord_id = g.player_discord_id
-        WHERE g.guild_id = {}'''.format(channel.guild.id))
+    query = 'SELECT discord_id, switch_tag, switch_code FROM player p INNER JOIN guild_member g ON p.discord_id = g.player_discord_id WHERE g.guild_id=%s'
+    cursor.execute(query, (channel.guild.id,))
     
     names = ''
     tags = ''
@@ -147,17 +140,10 @@ async def who_is(client, message, db):
         return
 
     lookup = tokens[1]
-
-    # TODO: UNSAFE, SANITIZE INPUT
+    
     cursor = db.cursor()
-    cursor.execute('''
-        SELECT
-            discord_id
-        FROM player p  
-        INNER JOIN guild_member g
-            ON p.discord_id = g.player_discord_id
-        WHERE g.guild_id = {} AND p.switch_tag = \'{}\''''.format(channel.guild.id, lookup))
-
+    query = 'SELECT discord_id FROM player p INNER JOIN guild_member g ON p.discord_id = g.player_discord_id WHERE g.guild_id=%s AND p.switch_tag=%s'
+    cursor.execute(query, (channel.guild_id, lookup))
     count = 0
     await channel.send('I found the following profiles matching the Switch tag {}:'.format(lookup))
     for row in cursor:
