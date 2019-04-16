@@ -21,7 +21,8 @@ async def help(client, message, db):
     author = message.author
 
     embed = discord.Embed(color=embed_color)
-    embed.set_author(name='Help Text', icon_url=channel.guild.icon_url)
+    embed.set_author(name='Help Text')
+    embed.set_thumbnail(url=client.user.avatar_url)
     embed.add_field(name='Command', value=help_commands, inline=True)
     embed.add_field(name='Description', value=help_descriptions, inline=True)
 

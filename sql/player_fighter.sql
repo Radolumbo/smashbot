@@ -1,3 +1,5 @@
+-- Stores who mains which characters (relationship between player and fighter)
+
 CREATE TABLE player_fighter
 (
     id INT AUTO_INCREMENT PRIMARY KEY,

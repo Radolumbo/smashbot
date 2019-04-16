@@ -1,4 +1,7 @@
 from sb_command import * 
+from sb_constants import *
+
+import discord
 
 class CommandCenter:
 
@@ -7,13 +10,15 @@ class CommandCenter:
     def __init__(self):
         pass
 
-    def register_command(self, name, func):
-        command = Command(name, func)
-        self.commands[name] = command
+    def register_command(self, command):
+        self.commands[command.name] = command
 
     async def run_command(self, name, client, message, db):
         if name in self.commands:
-            await self.commands[name].run(client, message, db)
-            return True
+            command = self.commands[name]
+            if isinstance(message.channel, discord.DMChannel) and command.channel_only():
+                return RC_CHANNEL_ONLY
+            await command.run(client, message, db)
+            return RC_SUCCESS
 
-        return False
+        return RC_COMMAND_DNE
