@@ -1,4 +1,5 @@
 INSERT INTO fighter
     (name)
 VALUES
-    ('Piranha Plant');
+    ('Piranha Plant')
+    ('Joker');
