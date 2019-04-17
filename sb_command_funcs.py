@@ -184,7 +184,7 @@ async def who_is(client, message, db):
             g.guild_id=%s
         AND 
             p.switch_tag=%s'''
-    cursor.execute(query, (channel.guild_id, lookup))
+    cursor.execute(query, (channel.guild.id, lookup))
     count = 0
     await channel.send('I found the following profiles matching the Switch tag {}:'.format(lookup))
     for row in cursor:
@@ -196,8 +196,30 @@ async def who_is(client, message, db):
     if(count == 0):
         await channel.send('None found.')
 
-async def i_main(client, message, db):
-    pass
+async def i_play(client, message, db):
+    channel = message.channel
+    author = message.author
+
+    tokens = message.content.split(' ')
+
+    if len(tokens < 2):
+        await channel.send('8!iplay usage: 8!whois <character>')
+
+    query = '''
+        SELECT 
+            discord_id 
+        FROM
+            player p 
+        INNER JOIN 
+            guild_member g 
+        ON 
+            p.discord_id = g.player_discord_id 
+        WHERE 
+            g.guild_id=%s
+        AND 
+            p.switch_tag=%s'''
+
+
 
 async def olimar_is_cool(client, message, db):
     channel = message.channel
