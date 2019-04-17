@@ -34,14 +34,28 @@ async def register(client, message, db):
     cursor = db.cursor()
 
     # Verify user hasn't registered for this server
-    query = 'SELECT COUNT(1) FROM guild_member WHERE player_discord_id = %s AND guild_id = %s'
+    query = '''
+        SELECT 
+            COUNT(1) 
+        FROM 
+            guild_member
+        WHERE 
+            player_discord_id = %s 
+        AND 
+            guild_id = %s'''
     cursor.execute(query, (author.id, channel.guild.id))
     if(cursor.fetchone()[0] > 0):
         await channel.send('{}, you\'re already registered in this channel, silly!'.format(author.mention))
         return
 
     # See if user has been registered at all
-    query = 'SELECT COUNT(1) FROM player WHERE discord_id = %s'
+    query = '''
+        SELECT 
+            COUNT(1) 
+        FROM 
+            player 
+        WHERE 
+            discord_id = %s'''
     cursor.execute(query, (author.id))
     is_registered = (cursor.fetchone()[0] > 0)
 
@@ -61,10 +75,11 @@ async def register(client, message, db):
     elif(not is_registered):
         tag = tokens[1]
         code = tokens[2]
-
-        query = 'INSERT INTO player (discord_id, switch_tag, switch_code) VALUES (%s,%s,%s)'
-
-
+        query = '''
+            INSERT INTO 
+                player (discord_id, switch_tag, switch_code) 
+            VALUES
+                 (%s,%s,%s)'''
         await channel.send('Registering {} as {} with Switch code {}. Is this good? (Y/N)' \
             .format(author.mention, tag, code))
 
@@ -85,7 +100,11 @@ async def register(client, message, db):
             return
     
     # Already registered or just registered, add them to this channel
-    query = 'INSERT INTO guild_member (player_discord_id, guild_id) VALUES (%s,%s)'
+    query = '''
+        INSERT INTO 
+            guild_member (player_discord_id, guild_id) 
+        VALUES 
+            (%s,%s)'''
     cursor.execute(query, (author.id, channel.guild.id))
     db.commit()
     await channel.send('Registered {.author.mention} in this server!'.format(message))
@@ -94,7 +113,17 @@ async def player_list(client, message, db):
     channel = message.channel
     author = message.author
     cursor = db.cursor()
-    query = 'SELECT discord_id, switch_tag, switch_code FROM player p INNER JOIN guild_member g ON p.discord_id = g.player_discord_id WHERE g.guild_id=%s'
+    query = '''
+        SELECT 
+            discord_id, switch_tag, switch_code 
+        FROM 
+            player p 
+        INNER JOIN 
+            guild_member g 
+        ON 
+            p.discord_id = g.player_discord_id 
+        WHERE 
+            g.guild_id=%s'''
     cursor.execute(query, (channel.guild.id,))
     
     names = ''
@@ -140,9 +169,21 @@ async def who_is(client, message, db):
         return
 
     lookup = tokens[1]
-    
+
     cursor = db.cursor()
-    query = 'SELECT discord_id FROM player p INNER JOIN guild_member g ON p.discord_id = g.player_discord_id WHERE g.guild_id=%s AND p.switch_tag=%s'
+    query = '''
+        SELECT 
+            discord_id 
+        FROM
+            player p 
+        INNER JOIN 
+            guild_member g 
+        ON 
+            p.discord_id = g.player_discord_id 
+        WHERE 
+            g.guild_id=%s
+        AND 
+            p.switch_tag=%s'''
     cursor.execute(query, (channel.guild_id, lookup))
     count = 0
     await channel.send('I found the following profiles matching the Switch tag {}:'.format(lookup))
