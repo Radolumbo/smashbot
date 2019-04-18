@@ -304,7 +304,7 @@ async def who_plays(client, message, db):
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):
-        await channel.send('I\'m really not sure who {} is. Remember: 88!whoplays usage: 8!whoplays <character>'.format(test_fighter_string))
+        await channel.send('I\'m really not sure who {} is. Remember: 8!whoplays usage: 8!whoplays <character>'.format(test_fighter_string))
         return
     
     try:
