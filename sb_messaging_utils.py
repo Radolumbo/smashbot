@@ -1,5 +1,8 @@
 import discord
+
 from sb_constants import embed_color
+from sb_other_utils import create_stitched_image, delete_image, fighter_amalgam_url
+
 
 async def send_profile(channel, db, user):
     cursor = db.cursor()
@@ -39,18 +42,7 @@ async def send_profile(channel, db, user):
     rows = cursor.fetchall()
     fighters_string = ''
 
-    for i in range(0, len(rows)):
-        name = rows[i][1]
-        # not last row
-        if(i < len(rows) - 1):
-            fighters_string += name + ', '
-        # last row
-        elif(len(rows) > 1):
-            fighters_string += ' and ' + name
-        # only row
-        else:
-            fighters_string += name
-
+    fighter_names = [row[1] for row in rows]
         
     embed = discord.Embed(color=embed_color)
     embed.set_author(name = user.display_name, icon_url=user.avatar_url)
@@ -59,6 +51,8 @@ async def send_profile(channel, db, user):
     
     # If any fighters were found
     if(len(rows) > 0):
-        embed.add_field(name='Fighters', value=fighters_string, inline=False)
+        #embed.add_field(name='Fighters', value=' ', inline=False)
+        amalgam_name = create_stitched_image(fighter_names)
+        embed.set_image(url=fighter_amalgam_url(amalgam_name))
 
     await channel.send(embed=embed)

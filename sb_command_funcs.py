@@ -1,24 +1,24 @@
 import discord
 import asyncio
 import mysql.connector
-import re
 
 import sb_messaging_utils as msg_utils
 from sb_messaging_utils import embed_color
 from sb_db_utils import is_registered
-from sb_other_utils import find_fighter
-from sb_constants import base_icon_url
+from sb_other_utils import find_fighter, fighter_icon_url
 
 help_commands = '''\
 8!register <switch_tag> <switch_code>
+8!update <tag|code> <value>
 8!playerlist
 8!profile <optional_mention>
 8!whois
-8!iplay [add|remove]
+8!iplay [add|remove] <fighter>
 8!whoplays <fighter>\
 '''
 help_descriptions = '''\
 Register in player list
+Update profile attributes
 List players in server
 View profile of self or mention
 Lookup player by switch tag
@@ -67,7 +67,7 @@ async def register(client, message, db):
         await channel.send('8!register usage: 8!register <swich_tag> <switch_code>')
         return
     # First time registration, wrong switch code format
-    #TODO: consider switching to regex for efficiency
+    #TODO: use regex to enforce more rigid structure
     elif(not is_reg and not tokens[2].lower().startswith('sw-')):
         await channel.send('Note: Switch code should look like SW-####-####-####')
         return
@@ -86,9 +86,10 @@ async def register(client, message, db):
         def check(m):
             return m.author == author and m.channel == channel
         try:
-            msg = await client.wait_for('message', check=check, timeout=10)
+            msg = await client.wait_for('message', check=check, timeout=15)
             
-            if(msg.content.lower() != 'y' and msg.content.lower() != 'yes'):
+            if(msg.content.lower() != 'y' and msg.content.lower() != 'yes' \
+                 and msg.content.lower() != '8!y'  and msg.content.lower() != '8!yes'):
                 await channel.send('Not registering {}.'.format(author.mention))
                 return
             
@@ -108,6 +109,45 @@ async def register(client, message, db):
     cursor.execute(query, (author.id, channel.guild.id))
     db.commit()
     await channel.send('Registered {.author.mention} in this server!'.format(message))
+
+async def update(client, message, db):
+    channel = message.channel
+    author = message.author
+    cursor = db.cursor()
+
+    # Tokenize input
+    tokens = message.content.split(' ')
+
+    if len(tokens) < 3:
+        await channel.send('8!update usage: 8!update <tag|code> <value>')
+        return
+
+    update_stmt = "SET "
+    val = None
+
+    if(tokens[1].lower() == "tag"):
+        update_stmt += "switch_tag = %(val)s"
+        val = ' '.join(tokens[2:])
+    elif(tokens[1].lower() == "code"):
+        if(len(tokens) > 3 or not tokens[2].lower().startswith('sw-')):
+            await channel.send('Note: Switch code should look like SW-####-####-####')
+            return
+        val = tokens[2]
+        update_stmt += "switch_code = %(val)s"
+    else:
+        await channel.send('Not sure what you\'re trying to do. Remember: 8!update usage: 8!update <tag|code> <value>')
+        return
+
+    query= '''
+        UPDATE player
+            ''' + update_stmt + '''
+        WHERE 
+            discord_id = %(discord_id)s'''
+
+    cursor.execute(query, {"val": val, "discord_id": author.id})
+    db.commit()
+    await channel.send('Updated {}\'s profile.'.format(author.mention))
+    
 
 async def player_list(client, message, db):
     channel = message.channel
@@ -342,7 +382,8 @@ async def who_plays(client, message, db):
     embed = discord.Embed(color=embed_color, description="No one." if msg == '' else msg)
     # Regex to remove ALL special characters from fighter name, then create url
     # Example: Pokemon Trainer becomes Pokmon Trainer due to special e
-    embed.set_author(name = "{} Players".format(fighter_name), icon_url=base_icon_url + re.sub('[^A-Za-z]', '', fighter_name) + '0' + '.png')
+    embed.set_author(name = "{} Players".format(fighter_name), icon_url=fighter_icon_url(fighter_name))
+    
     #embed.add_field(name='', value=tag, inline=True)
     await channel.send(embed=embed)
 
