@@ -1,4 +1,5 @@
 embed_color = 0x562906
+base_icon_url = 'https://res.cloudinary.com/du9xmm6rh/image/upload/smash_icons/'
 
 # return codes
 RC_SUCCESS = 0

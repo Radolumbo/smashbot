@@ -1,11 +1,13 @@
 import discord
 import asyncio
 import mysql.connector
+import re
 
 import sb_messaging_utils as msg_utils
 from sb_messaging_utils import embed_color
 from sb_db_utils import is_registered
 from sb_other_utils import find_fighter
+from sb_constants import base_icon_url
 
 help_commands = '''\
 8!register <switch_tag> <switch_code>
@@ -324,7 +326,8 @@ async def who_plays(client, message, db):
                 gm.guild_id = %(guild_id)s'''
         cursor.execute(query, {"fighter_name": fighter_name, "guild_id": channel.guild.id})
 
-        msg = 'The following users play {}:\n\n'.format(fighter_name)
+      #  msg = 'The following users play {}:\n\n'.format(fighter_name)
+        msg = ''
         rows = cursor.fetchall()
 
         # Gross but cool list generators to concatenate user names
@@ -335,8 +338,13 @@ async def who_plays(client, message, db):
         print(e)
         await channel.send('-bzzt- CRITICAL MAL -bzzt- FUNCT -bzzt- ION. Please try again.')
         return
-        
-    await channel.send(msg)
+    
+    embed = discord.Embed(color=embed_color, description="No one." if msg == '' else msg)
+    # Regex to remove ALL special characters from fighter name, then create url
+    # Example: Pokemon Trainer becomes Pokmon Trainer due to special e
+    embed.set_author(name = "{} Players".format(fighter_name), icon_url=base_icon_url + re.sub('[^A-Za-z]', '', fighter_name) + '0' + '.png')
+    #embed.add_field(name='', value=tag, inline=True)
+    await channel.send(embed=embed)
 
 async def olimar_is_cool(client, message, db):
     channel = message.channel
