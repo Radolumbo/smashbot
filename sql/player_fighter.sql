@@ -10,5 +10,6 @@ CREATE TABLE player_fighter
     FOREIGN KEY (player_discord_id)
         REFERENCES player(discord_id),
     FOREIGN KEY (fighter_id)
-        REFERENCES fighter(id)
+        REFERENCES fighter(id),
+    UNIQUE KEY (player_discord_id, fighter_id)
 ); 

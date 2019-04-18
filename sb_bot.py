@@ -31,11 +31,13 @@ command_center.register_command(ChannelCommand("register", funcs.register))
 command_center.register_command(ChannelCommand("playerlist", funcs.player_list))
 command_center.register_command(ChannelCommand("profile", funcs.profile))
 command_center.register_command(ChannelCommand("whois", funcs.who_is))
+command_center.register_command(Command("iplay", funcs.i_play))
+command_center.register_command(ChannelCommand("whoplays", funcs.who_plays))
 command_center.register_command(ChannelCommand("olimariscool", funcs.olimar_is_cool))
 
 @client.event
 async def on_ready():
-    await client.change_presence(activity=discord.Game(name="Insert girder"))
+    await client.change_presence(activity=discord.Game(name="8!help for commands"))
     print('We have logged in as {0.user}'.format(client))
 
 @client.event
