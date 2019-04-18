@@ -56,6 +56,9 @@ async def send_profile(channel, db, user):
     embed.set_author(name = user.display_name, icon_url=user.avatar_url)
     embed.add_field(name='Switch Tag', value=tag, inline=True)
     embed.add_field(name='Switch Code', value=code, inline=True)
-    embed.add_field(name='Fighters', value=fighters_string, inline=False)
+    
+    # If any fighters were found
+    if(len(rows) > 0):
+        embed.add_field(name='Fighters', value=fighters_string, inline=False)
 
     await channel.send(embed=embed)

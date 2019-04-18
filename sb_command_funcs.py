@@ -72,7 +72,7 @@ async def register(client, message, db):
     # First time registration, correct input
     elif(not is_reg):
         tag = tokens[1]
-        code = tokens[2]
+        code = tokens[2].upper()
         query = '''
             INSERT INTO 
                 player (discord_id, switch_tag, switch_code) 

@@ -14,8 +14,8 @@ class CommandCenter:
         self.commands[command.name] = command
 
     async def run_command(self, name, client, message, db):
-        if name in self.commands:
-            command = self.commands[name]
+        if name.lower() in self.commands:
+            command = self.commands[name.lower()]
             if isinstance(message.channel, discord.DMChannel) and command.channel_only():
                 return RC_CHANNEL_ONLY
             await command.run(client, message, db)
