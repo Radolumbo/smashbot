@@ -21,4 +21,4 @@ def get_fighter_names(db):
     data = cursor.fetchall()
     fighter_names = [data[i][0] for i in range(0,len(data))]
     
-    return fighter_names
+    return fighter_names  
