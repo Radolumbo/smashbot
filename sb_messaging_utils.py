@@ -6,22 +6,23 @@ from sb_other_utils import create_stitched_image, delete_image, fighter_amalgam_
 
 async def send_profile(channel, db, user):
     cursor = db.cursor()
+    
+    params = {"discord_id": user.id}
     query= '''
         SELECT
             switch_tag, switch_code
         FROM 
-            player p  
-        INNER JOIN 
-            guild_member g
-        ON 
-            p.discord_id = g.player_discord_id
+            player p
         WHERE 
-            g.guild_id = %s 
-        AND 
-            p.discord_id = %s'''
+            p.discord_id = %(discord_id)s'''
 
-    cursor.execute(query, (channel.guild.id, user.id))
+    cursor.execute(query, params)
     row = cursor.fetchone()
+
+    if row is None:
+        await channel.send('That user hasn\'t registered yet. Get on it, {}! (8!register)'.format(user.mention))
+        return
+
     tag = row[0]
     code = row[1]
 

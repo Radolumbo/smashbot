@@ -26,14 +26,14 @@ db = mysql.connector.connect(
 client = discord.Client()
 
 command_center = CommandCenter()
-command_center.register_command(Command("help", funcs.help))
-command_center.register_command(ChannelCommand("register", funcs.register))
-command_center.register_command(ChannelCommand("update", funcs.update))
-command_center.register_command(ChannelCommand("playerlist", funcs.player_list))
-command_center.register_command(ChannelCommand("profile", funcs.profile))
-command_center.register_command(ChannelCommand("whois", funcs.who_is))
-command_center.register_command(Command("iplay", funcs.i_play))
-command_center.register_command(ChannelCommand("whoplays", funcs.who_plays))
+command_center.register_command(Command(       "help",         funcs.help))
+command_center.register_command(ChannelCommand("register",     funcs.register))
+command_center.register_command(ChannelCommand("update",       funcs.update))
+command_center.register_command(ChannelCommand("playerlist",   funcs.player_list))
+command_center.register_command(Command(       "profile",      funcs.profile))
+command_center.register_command(ChannelCommand("whois",        funcs.who_is))
+command_center.register_command(Command(       "iplay",        funcs.i_play))
+command_center.register_command(ChannelCommand("whoplays",     funcs.who_plays))
 command_center.register_command(ChannelCommand("olimariscool", funcs.olimar_is_cool))
 
 @client.event

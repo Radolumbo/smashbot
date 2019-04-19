@@ -146,8 +146,7 @@ async def update(client, message, db):
 
     cursor.execute(query, {"val": val, "discord_id": author.id})
     db.commit()
-    await channel.send('Updated {}\'s profile.'.format(author.mention))
-    
+    await channel.send('Updated {}\'s profile.'.format(author.mention))  
 
 async def player_list(client, message, db):
     channel = message.channel
