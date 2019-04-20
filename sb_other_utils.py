@@ -27,8 +27,8 @@ cloudinary.config(
   api_secret = NSA_IS_WATCHING["cloudinary_secret"] 
 )
 
-def find_fighter(db, test_fighter_string):
-    fighter_names = get_fighter_names(db)
+async def find_fighter(db, test_fighter_string):
+    fighter_names = await get_fighter_names(db)
     # Use fuzzy wuzzy to find most likely fighter match
     fighter_name, confidence = process.extractOne(test_fighter_string, fighter_names, scorer=fuzz.token_sort_ratio)
     return (fighter_name, confidence)

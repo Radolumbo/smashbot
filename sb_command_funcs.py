@@ -67,7 +67,7 @@ async def register(client, message, db_acc):
         return
 
     # See if user has been registered at all
-    is_reg = is_registered(db_acc, author.id, channel)
+    is_reg = await is_registered(db_acc, author.id, channel)
 
     # Tokenize input
     tokens = message.content.split(' ')
@@ -316,14 +316,14 @@ async def i_play(client, message, db_acc):
     # Assume everything after is the fighter name
     test_fighter_string = ' '.join(tokens[fighter_name_start_idx:])
 
-    fighter_name, confidence = find_fighter(db_acc, test_fighter_string)
+    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):
         await channel.send('I\'m really not sure who {} is. Remember: 8!iplay usage: 8!iplay [add/remove] <character>'.format(test_fighter_string))
         return
 
-    if(not is_registered(db_acc, author.id, channel)):
+    if(not await is_registered(db_acc, author.id, channel)):
         await channel.send('Please register with 8!register first!')
         return
     
@@ -389,7 +389,7 @@ async def who_plays(client, message, db_acc):
     # Assume everything after is the fighter name
     test_fighter_string = ' '.join(tokens[1:])
 
-    fighter_name, confidence = find_fighter(db, test_fighter_string)
+    fighter_name, confidence = await find_fighter(db, test_fighter_string)
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):

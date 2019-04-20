@@ -1,7 +1,7 @@
 from sb_constants import DB_ERROR_MSG
 import sb_db.errors as dberr
 
-def is_registered(db_acc, discord_id, channel):
+async def is_registered(db_acc, discord_id, channel):
     try: 
         return db_acc.execute('''
             SELECT 
@@ -19,7 +19,7 @@ def is_registered(db_acc, discord_id, channel):
         await channel.send(DB_ERROR_MSG.format(user.id))
         raise
 
-def get_fighter_names(db_acc):
+async def get_fighter_names(db_acc):
     try:
         data = db_acc.execute('''
             SELECT 
