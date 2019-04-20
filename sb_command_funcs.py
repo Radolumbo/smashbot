@@ -272,7 +272,7 @@ async def who_is(client, message, db_acc):
                 p.switch_tag=%(lookup)s''',
             {
                 "guild_id": channel.guild.id,
-                "tag": lookup
+                "lookup": lookup
             }
         )
     except dberr.Error as e:
