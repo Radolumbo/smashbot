@@ -37,7 +37,7 @@ class DBAccessor:
         except dberr.DuplicateKeyError:
             raise
         except dberr.Error:
-            time.sleep(.200)
+            time.sleep(.250)
             return self.__execute_impl(query, params, is_update)
 
     def execute_update(self, query, params):
@@ -54,6 +54,8 @@ class DBAccessor:
                 conn.commit()
             else:
                 return cursor.fetchall()
+        except sqlerr.PoolError as e:
+            raise dberr.PoolBusyError from e
         except sqlerr.IntegrityError as e:
             if is_update:
                 conn.rollback()

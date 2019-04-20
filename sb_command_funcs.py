@@ -3,7 +3,7 @@ import asyncio
 import mysql.connector
 
 import sb_messaging_utils as msg_utils
-from sb_messaging_utils import embed_color
+from sb_constants import embed_color, DB_ERROR_MSG
 from sb_db.utils import is_registered
 from sb_other_utils import find_fighter, fighter_icon_url
 import sb_db.errors as dberr
@@ -41,27 +41,33 @@ async def help(client, message, db_acc):
 async def register(client, message, db_acc):
     channel = message.channel
     author = message.author
-
+    record = None
     # Verify user hasn't registered for this server
-    record = db_acc.execute('''
-        SELECT 
-            COUNT(1) AS registered
-        FROM 
-            guild_member
-        WHERE 
-            player_discord_id = %(discord_id)s AND 
-            guild_id = %(guild_id)s''',
-        {
-            "discord_id": author.id,
-            "guild_id": channel.guild.id
-        }
-    )[0]
+    try:
+        record = db_acc.execute('''
+            SELECT 
+                COUNT(1) AS registered
+            FROM 
+                guild_member
+            WHERE 
+                player_discord_id = %(discord_id)s AND 
+                guild_id = %(guild_id)s''',
+            {
+                "discord_id": author.id,
+                "guild_id": channel.guild.id
+            }
+        )[0]
+    except dberr.Error as e:
+        print(e)
+        await channel.send(DB_ERROR_MSG.format(author.mention))
+        raise
+
     if(record["registered"] > 0):
         await channel.send('{}, you\'re already registered in this channel, silly!'.format(author.mention))
         return
 
     # See if user has been registered at all
-    is_reg = is_registered(db_acc, author.id)
+    is_reg = is_registered(db_acc, author.id, channel)
 
     # Tokenize input
     tokens = message.content.split(' ')
@@ -92,33 +98,43 @@ async def register(client, message, db_acc):
                 await channel.send('Not registering {}.'.format(author.mention))
                 return
 
-            db_acc.execute_update('''
-                INSERT INTO 
-                    player (discord_id, switch_tag, switch_code) 
-                VALUES
-                    (%(discord_id)s, %(tag)s, %(code)s)''',
-                {
-                    "discord_id": author.id,
-                    "tag": tag,
-                    "code": code
-                }
-            )
+            try:
+                db_acc.execute_update('''
+                    INSERT INTO 
+                        player (discord_id, switch_tag, switch_code) 
+                    VALUES
+                        (%(discord_id)s, %(tag)s, %(code)s)''',
+                    {
+                        "discord_id": author.id,
+                        "tag": tag,
+                        "code": code
+                    }
+                )
+            except dberr.Error as e:
+                print(e)
+                await channel.send(DB_ERROR_MSG.format(author.mention))
+                raise
             await channel.send('Registered {.author.mention} in the player database!'.format(msg))
         except asyncio.TimeoutError:
             await channel.send('Time ran out to confirm. Try again, {}.'.format(author.mention))
             return
     
     # Already registered or just registered, add them to this channel
-    db_acc.execute_update('''
-        INSERT INTO 
-            guild_member (player_discord_id, guild_id) 
-        VALUES 
-            (%(discord_id)s, %(guild_id)s)''',
-        {
-            "discord_id": author.id,
-            "guild_id": channel.guild.id
-        }
-    )
+    try:
+        db_acc.execute_update('''
+            INSERT INTO 
+                guild_member (player_discord_id, guild_id) 
+            VALUES 
+                (%(discord_id)s, %(guild_id)s)''',
+            {
+                "discord_id": author.id,
+                "guild_id": channel.guild.id
+            }
+        )
+    except dberr.Error as e:
+        print(e)
+        await channel.send(DB_ERROR_MSG.format(author.mention))
+        raise
     await channel.send('Registered {.author.mention} in this server!'.format(message))
 
 async def update(client, message, db_acc):
@@ -147,37 +163,48 @@ async def update(client, message, db_acc):
     else:
         await channel.send('Not sure what you\'re trying to do. Remember: 8!update usage: 8!update <tag|code> <value>')
         return
+    try:
+        db_acc.execute_update('''
+            UPDATE player
+                ''' + update_stmt + '''
+            WHERE 
+                discord_id = %(discord_id)s''',
+            {
+                "val": val,
+                "discord_id": author.id
+            }
+        )
+    except dberr.Error as e:
+        print(e)
+        await channel.send(DB_ERROR_MSG.format(author.mention))
+        raise
 
-    db_acc.execute_update('''
-        UPDATE player
-            ''' + update_stmt + '''
-        WHERE 
-            discord_id = %(discord_id)s''',
-        {
-            "val": val,
-            "discord_id": author.id
-        }
-    )
     await channel.send('Updated {}\'s profile.'.format(author.mention))  
 
 async def player_list(client, message, db_acc):
     channel = message.channel
     author = message.author
-    
-    rows = db_acc.execute('''
-        SELECT 
-            discord_id, switch_tag, switch_code 
-        FROM 
-            player p 
-        INNER JOIN 
-            guild_member g 
-            ON p.discord_id = g.player_discord_id 
-        WHERE 
-            g.guild_id=%(guild_id)s''',
-        {
-            "guild_id": channel.guild.id
-        }
-    )
+    rows = None
+
+    try:
+        rows = db_acc.execute('''
+            SELECT 
+                discord_id, switch_tag, switch_code 
+            FROM 
+                player p 
+            INNER JOIN 
+                guild_member g 
+                ON p.discord_id = g.player_discord_id 
+            WHERE 
+                g.guild_id=%(guild_id)s''',
+            {
+                "guild_id": channel.guild.id
+            }
+        )
+    except dberr.Error as e:
+        print(e)
+        await channel.send(DB_ERROR_MSG.format(author.mention))
+        raise
     
     names = ''
     tags = ''
@@ -229,22 +256,29 @@ async def who_is(client, message, db_acc):
 
     lookup = tokens[1]
 
-    rows = db_acc.execute('''
-        SELECT 
-            discord_id 
-        FROM
-            player p 
-        INNER JOIN 
-            guild_member g 
-            ON p.discord_id = g.player_discord_id 
-        WHERE 
-            g.guild_id=%(guild_id)s AND 
-            p.switch_tag=%(lookup)s''',
-        {
-            "guild_id": channel.guild.id,
-            "tag": lookup
-        }
-    )
+    rows = None
+    
+    try:
+        rows = db_acc.execute('''
+            SELECT 
+                discord_id 
+            FROM
+                player p 
+            INNER JOIN 
+                guild_member g 
+                ON p.discord_id = g.player_discord_id 
+            WHERE 
+                g.guild_id=%(guild_id)s AND 
+                p.switch_tag=%(lookup)s''',
+            {
+                "guild_id": channel.guild.id,
+                "tag": lookup
+            }
+        )
+    except dberr.Error as e:
+        print(e)
+        await channel.send(DB_ERROR_MSG.format(author.mention))
+        raise
     
     count = 0
     await channel.send('I found the following profiles matching the Switch tag {}:'.format(lookup))
@@ -289,7 +323,7 @@ async def i_play(client, message, db_acc):
         await channel.send('I\'m really not sure who {} is. Remember: 8!iplay usage: 8!iplay [add/remove] <character>'.format(test_fighter_string))
         return
 
-    if(not is_registered(db_acc, author.id)):
+    if(not is_registered(db_acc, author.id, channel)):
         await channel.send('Please register with 8!register first!')
         return
     
@@ -307,10 +341,10 @@ async def i_play(client, message, db_acc):
                     "name": fighter_name
                 }
             )
-        except Exception as e:
+        except dberr.Error as e:
             print(e)
-            await channel.send('-bzzt- CRITICAL MAL -bzzt- FUNCT -bzzt- ION. Please try again.')
-            return
+            await channel.send(DB_ERROR_MSG.format(author.mention))
+            raise
         await channel.send('{} does not play {}, okay.'.format(author.mention, fighter_name))
     # Adding that you play this character   
     else:
@@ -335,10 +369,10 @@ async def i_play(client, message, db_acc):
         except dberr.DuplicateKeyError as e:
             await channel.send('I already know you play {}, {}!'.format(fighter_name, author.mention))
             return
-        except Exception as e:
+        except dberr.Error as e:
             print(e)
-            await channel.send('-bzzt- CRITICAL MAL -bzzt- FUNCT -bzzt- ION. Please try again.')
-            return
+            await channel.send(DB_ERROR_MSG.format(author.mention))
+            raise
         
         await channel.send('Okay, noted that {} plays {}! Cool!'.format(author.mention, fighter_name))
 
@@ -390,10 +424,10 @@ async def who_plays(client, message, db_acc):
         users = [message.guild.get_member(int(row["discord_id"])) for row in rows]
         msg += ', '.join([user.display_name for user in users])
 
-    except Exception as e:
+    except dberr.Error as e:
         print(e)
-        await channel.send('-bzzt- CRITICAL MAL -bzzt- FUNCT -bzzt- ION. Please try again.')
-        return
+        await channel.send(DB_ERROR_MSG.format(author.mention))
+        raise
     
     embed = discord.Embed(color=embed_color, description="No one." if msg == '' else msg)
     # Regex to remove ALL special characters from fighter name, then create url

@@ -3,3 +3,6 @@ class Error(Exception):
 
 class DuplicateKeyError(Error):
     pass
+
+class PoolBusyError(Error):
+    pass

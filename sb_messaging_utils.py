@@ -1,20 +1,26 @@
 import discord
 
-from sb_constants import embed_color
+from sb_constants import embed_color, DB_ERROR_MSG
 from sb_other_utils import create_stitched_image, delete_image, fighter_amalgam_url
-
+import sb_db.errors as dberr
 
 async def send_profile(channel, db_acc, user):
     params = {"discord_id": user.id}
-    row = db_acc.execute('''
-        SELECT
-            switch_tag, switch_code
-        FROM 
-            player p
-        WHERE 
-            p.discord_id = %(discord_id)s''',
-        params
-    )[0]
+    row = None
+    try:
+        row = db_acc.execute('''
+            SELECT
+                switch_tag, switch_code
+            FROM 
+                player p
+            WHERE 
+                p.discord_id = %(discord_id)s''',
+            params
+        )[0]
+    except dberr.Error as e:
+        print(e)
+        await channel.send(DB_ERROR_MSG.format(user.id))
+        raise
 
     if row is None:
         await channel.send('That user hasn\'t registered yet. Get on it, {}! (8!register)'.format(user.mention))
@@ -23,22 +29,28 @@ async def send_profile(channel, db_acc, user):
     tag = row["switch_tag"]
     code = row["switch_code"]
 
+    rows = None
     # get list of fighters used
-    rows = db_acc.execute('''
-        SELECT
-            f.id, name
-        FROM 
-            fighter f
-        INNER JOIN 
-            player_fighter pf
-        ON 
-            pf.fighter_id = f.id
-        WHERE 
-            pf.player_discord_id = %(discord_id)s''',
-        {
-            "discord_id": user.id
-        }
-    )
+    try:
+        rows = db_acc.execute('''
+            SELECT
+                f.id, name
+            FROM 
+                fighter f
+            INNER JOIN 
+                player_fighter pf
+            ON 
+                pf.fighter_id = f.id
+            WHERE 
+                pf.player_discord_id = %(discord_id)s''',
+            {
+                "discord_id": user.id
+            }
+        )
+    except dberr.Error as e:
+        print(e)
+        await channel.send(DB_ERROR_MSG.format(user.id))
+        raise
 
     fighters_string = ''
 
