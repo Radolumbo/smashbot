@@ -8,6 +8,7 @@ import mysql.connector
 from sb_command import Command
 from sb_channelcommand import ChannelCommand
 from sb_constants import *
+from sb_db.accessor import DBAccessor
 
 SECRET_CONFIG_FILE = './super_secret_config.json'
 
@@ -16,16 +17,11 @@ NSA_IS_WATCHING = {}
 with open(SECRET_CONFIG_FILE) as json_file:  
     NSA_IS_WATCHING = json.load(json_file)
 
-db = mysql.connector.connect(
-  host="localhost",
-  user=NSA_IS_WATCHING["db_user"],
-  passwd=NSA_IS_WATCHING["db_pass"],
-  database=NSA_IS_WATCHING["db_name"]
-)
+db_accessor = DBAccessor(NSA_IS_WATCHING["db_host"], NSA_IS_WATCHING["db_name"], NSA_IS_WATCHING["db_user"], NSA_IS_WATCHING["db_pass"])
 
 client = discord.Client()
 
-command_center = CommandCenter()
+command_center = CommandCenter(db_accessor, client)
 command_center.register_command(Command(       "help",         funcs.help))
 command_center.register_command(ChannelCommand("register",     funcs.register))
 command_center.register_command(ChannelCommand("update",       funcs.update))
@@ -53,7 +49,7 @@ async def on_message(message):
         return
 
     command_name = message.content.split(' ')[0][2:]
-    rc = await command_center.run_command(command_name, client, message, db)
+    rc = await command_center.run_command(command_name, client, message)
 
     if(rc == RC_COMMAND_DNE):
         await channel.send("Command not recognized, {}".format(author.mention))

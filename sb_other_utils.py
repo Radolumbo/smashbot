@@ -11,7 +11,7 @@ import cloudinary.uploader
 
 from PIL import Image
 
-from sb_db_utils import get_fighter_names
+from sb_db.utils import get_fighter_names
 from sb_constants import base_icon_url
 
 SECRET_CONFIG_FILE = './super_secret_config.json'
