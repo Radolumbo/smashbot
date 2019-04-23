@@ -389,7 +389,7 @@ async def who_plays(client, message, db_acc):
     # Assume everything after is the fighter name
     test_fighter_string = ' '.join(tokens[1:])
 
-    fighter_name, confidence = await find_fighter(db, test_fighter_string)
+    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):
