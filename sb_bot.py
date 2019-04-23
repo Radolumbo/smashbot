@@ -9,10 +9,13 @@ from sb_command import Command
 from sb_channelcommand import ChannelCommand
 from sb_constants import *
 from sb_db.accessor import DBAccessor
+import sys
 
 SECRET_CONFIG_FILE = './super_secret_config.json'
 
 NSA_IS_WATCHING = {}
+
+TEST_MODE = len(sys.argv) > 1 and (sys.argv[1] == "-t" or sys.argv[1] == "--test")
 
 with open(SECRET_CONFIG_FILE) as json_file:  
     NSA_IS_WATCHING = json.load(json_file)
@@ -45,7 +48,9 @@ async def on_message(message):
     if author == client.user:
         return
 
-    if(not message.content.startswith("8!")):
+    if(not TEST_MODE and not message.content.startswith("8!")):
+        return
+    elif(TEST_MODE and  not message.content.startswith("7!")):
         return
 
     command_name = message.content.split(' ')[0][2:]
@@ -56,4 +61,9 @@ async def on_message(message):
     elif(rc == RC_CHANNEL_ONLY):
         await channel.send("That command only works in channels.")
 
-client.run(NSA_IS_WATCHING["discord_token"])
+
+token = NSA_IS_WATCHING["discord_token"]
+if TEST_MODE:
+    token = NSA_IS_WATCHING["test_token"]
+
+client.run(token)
