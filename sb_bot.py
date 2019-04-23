@@ -17,6 +17,11 @@ NSA_IS_WATCHING = {}
 
 TEST_MODE = len(sys.argv) > 1 and (sys.argv[1] == "-t" or sys.argv[1] == "--test")
 
+command_prefix = "8!"
+
+if TEST_MODE:
+    command_prefix = "7!"
+
 with open(SECRET_CONFIG_FILE) as json_file:  
     NSA_IS_WATCHING = json.load(json_file)
 
@@ -37,7 +42,7 @@ command_center.register_command(ChannelCommand("olimariscool", funcs.olimar_is_c
 
 @client.event
 async def on_ready():
-    await client.change_presence(activity=discord.Game(name="8!help for commands"))
+    await client.change_presence(activity=discord.Game(name="{}help for commands".format(command_prefix)))
     print('We have logged in as {0.user}'.format(client))
 
 @client.event
@@ -48,9 +53,7 @@ async def on_message(message):
     if author == client.user:
         return
 
-    if(not TEST_MODE and not message.content.startswith("8!")):
-        return
-    elif(TEST_MODE and  not message.content.startswith("7!")):
+    if(not message.content.startswith(command_prefix)):
         return
 
     command_name = message.content.split(' ')[0][2:]
