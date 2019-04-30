@@ -34,7 +34,12 @@ async def send_profile(channel, db_acc, user):
     try:
         rows = db_acc.execute('''
             SELECT
-                f.id, name
+                f.id,
+                f.name,
+                pf.is_main,
+                pf.is_true_main,
+                pf.is_pocket,
+                pf.costume_number
             FROM 
                 fighter f
             INNER JOIN 
@@ -42,7 +47,12 @@ async def send_profile(channel, db_acc, user):
             ON 
                 pf.fighter_id = f.id
             WHERE 
-                pf.player_discord_id = %(discord_id)s''',
+                pf.player_discord_id = %(discord_id)s
+            ORDER BY
+                pf.is_true_main DESC,
+                pf.is_main DESC,
+                pf.is_pocket DESC,
+                f.name''', 
             {
                 "discord_id": user.id
             }
@@ -52,9 +62,16 @@ async def send_profile(channel, db_acc, user):
         await channel.send(DB_ERROR_MSG.format(user.id))
         raise
 
-    fighters_string = ''
-
-    fighter_names = [row["name"] for row in rows]
+    fighters = [
+        {
+            "name": row["name"],
+            "is_main": row["is_main"],
+            "is_true_main": row["is_true_main"],
+            "is_pocket": row["is_pocket"],
+            "costume_number": row["costume_number"]
+        }
+        for row in rows
+    ]
         
     embed = discord.Embed(color=embed_color)
     embed.set_author(name = user.display_name, icon_url=user.avatar_url)
@@ -65,8 +82,9 @@ async def send_profile(channel, db_acc, user):
     if(len(rows) > 0):
         try:
             #embed.add_field(name='Fighters', value=' ', inline=False)
-            amalgam_name = create_stitched_image(fighter_names)
-            embed.set_image(url=fighter_amalgam_url(amalgam_name))
+            amalgam_url = create_stitched_image(fighters)
+            embed.set_image(url=amalgam_url)
+            embed.set_footer(text='Green "M" means "main"; Red "P" means "pocket"')
         # If creating the image fails, still post the profile just without the image
         except Exception as e:
             print(e)

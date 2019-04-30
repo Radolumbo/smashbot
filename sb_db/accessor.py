@@ -16,20 +16,6 @@ class DBAccessor:
                                                     user = user,
                                                     passwd = password)
 
-    # Delete once confirming pool will open a new connection if one times out
-    #def connect_to_db(self):
-    #    self.connection = mysql.connector.connect(
-    #        host=self.host,
-    #        user=self.user,
-    #        passwd=self.password,
-    #        database=self.name
-    #    )
-    #    cursor = self.connection.cursor()
-    #   # Timeout = 2 days
-    #    cursor.execute("SET SESSION wait_timeout = 172800")
-    #    # not sure if necessary but
-    #    self.connection.commit()
-
     def execute(self, query, params, is_update=False):
         # Try once, if DB fails, will sleep + try again
         try:

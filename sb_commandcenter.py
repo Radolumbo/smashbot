@@ -23,4 +23,4 @@ class CommandCenter:
                 return RC_CHANNEL_ONLY
             await command.run(client, message, self.db_accessor)
             return RC_SUCCESS
-        return RC_COMMAND_DNE
+        return RC_COMMAND_DNE 

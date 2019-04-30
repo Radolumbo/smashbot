@@ -27,7 +27,7 @@ with open(SECRET_CONFIG_FILE) as json_file:
 
 db_accessor = DBAccessor(NSA_IS_WATCHING["db_host"], NSA_IS_WATCHING["db_name"], NSA_IS_WATCHING["db_user"], NSA_IS_WATCHING["db_pass"])
 
-client = discord.Client()
+client = discord.Client() 
 
 command_center = CommandCenter(db_accessor, client)
 command_center.register_command(Command(       "help",         funcs.help))
@@ -37,6 +37,8 @@ command_center.register_command(ChannelCommand("playerlist",   funcs.player_list
 command_center.register_command(Command(       "profile",      funcs.profile))
 command_center.register_command(ChannelCommand("whois",        funcs.who_is))
 command_center.register_command(Command(       "iplay",        funcs.i_play))
+command_center.register_command(Command(       "imain",        funcs.i_main))
+command_center.register_command(Command(       "ipocket",      funcs.i_pocket))
 command_center.register_command(ChannelCommand("whoplays",     funcs.who_plays))
 command_center.register_command(ChannelCommand("olimariscool", funcs.olimar_is_cool))
 

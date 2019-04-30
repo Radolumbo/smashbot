@@ -10,18 +10,18 @@ import sb_db.errors as dberr
 
 help_commands = '''\
 8!register <switch_tag> <switch_code>
-8!update <tag|code> <value>
+8!update (tag|code) <value>
 8!playerlist
-8!profile <optional_mention>
-8!whois
-8!iplay [add|remove] <fighter>
+8!profile @discord_user
+8!whois <switch_tag>
+8!imain, 8!ipocket, 8!iplay (add|remove) <fighter>
 8!whoplays <fighter>\
 '''
 help_descriptions = '''\
 Register in player list
 Update profile attributes
 List players in server
-View profile of self or mention
+View profile of mentioned user (omit to view self)
 Lookup player by switch tag
 Add/remove a fighter to/from your repertoire
 Find players in this server who use a fighter\
@@ -239,6 +239,10 @@ async def profile(client, message, db_acc):
         mention = author
     elif len(message.mentions) == 1:
         mention = message.mentions[0]
+    elif len(tokens) == 2:
+        await channel.send('No mention included, looking up by Switch tag...')
+        await who_is(client, message, db_acc)
+        return
     else:
         await channel.send('8!profile usage: 8!profile @optional_mention')
         return
@@ -291,14 +295,18 @@ async def who_is(client, message, db_acc):
     if(count == 0):
         await channel.send('None found.')
 
-async def i_play(client, message, db_acc):
+# send_message is a little hacky, but a VERY convenient
+# way to allow us to reuse "i play" to insert mains/pockets
+# when 8!imain or 8!ipocket is used before 8!iplay
+async def i_play(client, message, db_acc, send_message = True):
     channel = message.channel
     author = message.author
 
     tokens = message.content.split(' ')
 
     if len(tokens) < 2:
-        await channel.send('8!iplay usage: 8!iplay [add|remove] <character>')
+        if send_message:
+            await channel.send('8!iplay usage: 8!iplay [add|remove] <character>')
         return
 
     remove_fighter = False
@@ -320,11 +328,14 @@ async def i_play(client, message, db_acc):
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):
-        await channel.send('I\'m really not sure who {} is. Remember: 8!iplay usage: 8!iplay [add/remove] <character>'.format(test_fighter_string))
+        if send_message:
+            await channel.send('I\'m really not sure who {} is. Remember: 8!iplay usage:' \
+                           ' 8!iplay [add/remove] <character>'.format(test_fighter_string))
         return
 
     if(not await is_registered(db_acc, author.id, channel)):
-        await channel.send('Please register with 8!register first!')
+        if send_message:
+            await channel.send('Please register with 8!register first!')
         return
     
     # Removing that you play this character
@@ -343,9 +354,11 @@ async def i_play(client, message, db_acc):
             )
         except dberr.Error as e:
             print(e)
-            await channel.send(DB_ERROR_MSG.format(author.mention))
+            if send_message:
+                await channel.send(DB_ERROR_MSG.format(author.mention))
             raise
-        await channel.send('{} does not play {}, okay.'.format(author.mention, fighter_name))
+        if send_message:
+            await channel.send('{} does not play {}, okay.'.format(author.mention, fighter_name))
     # Adding that you play this character   
     else:
         try:
@@ -367,14 +380,153 @@ async def i_play(client, message, db_acc):
                 }
             )
         except dberr.DuplicateKeyError as e:
-            await channel.send('I already know you play {}, {}!'.format(fighter_name, author.mention))
+            if send_message:
+                await channel.send('I already know you play {}, {}!'.format(fighter_name, author.mention))
             return
+        except dberr.Error as e:
+            print(e)
+            if send_message:
+                await channel.send(DB_ERROR_MSG.format(author.mention))
+            raise
+        
+        if send_message:
+            await channel.send('Okay, noted that {} plays {}! Cool!'.format(author.mention, fighter_name))
+
+async def i_main(client, message, db_acc):
+    channel = message.channel
+    author = message.author
+
+    tokens = message.content.split(' ')
+
+    if len(tokens) < 2:
+        await channel.send('8!imain usage: 8!imain [add|remove] <character>')
+        return
+
+    remove_fighter = False
+
+    # Figure out where the fighter name starts
+    # to determine between 8!imain pit and 8!imain remove/add pit
+    fighter_name_start_idx = 1
+
+    if(tokens[1].lower() == "add"):
+        fighter_name_start_idx = 2
+    elif(tokens[1].lower() == "remove"):    
+        fighter_name_start_idx = 2
+        remove_fighter = True
+
+    if not remove_fighter:
+        # First add character, if necessary
+        await i_play(client, message, db_acc, False)
+
+    # Assume everything after is the fighter name
+    test_fighter_string = ' '.join(tokens[fighter_name_start_idx:])
+    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
+
+    # Might want to fine tune this later, but 80 seems good
+    if(confidence < 80):
+        await channel.send('I\'m really not sure who {} is. Remember: 8!imain usage: 8!imain [add/remove] <character>'.format(test_fighter_string))
+        return
+
+    if(not await is_registered(db_acc, author.id, channel)):
+        await channel.send('Please register with 8!register first!')
+        return
+    # Adding or removing that you main this character   
+    else:
+        try:
+            db_acc.execute_update('''
+                UPDATE
+                    player_fighter
+                SET
+                    is_main      = %(set_main)s,
+                    is_pocket    = IF(%(set_main)s = 1, 0, is_pocket),
+                    is_true_main = IF(%(set_main)s = 1, is_true_main, 0)
+                WHERE 
+                    player_discord_id = %(discord_id)s AND
+                    fighter_id = (SELECT id FROM fighter WHERE name=%(name)s)''',
+                {
+                    "discord_id": author.id,
+                    "name": fighter_name,
+                    "set_main": 0 if remove_fighter else 1
+                }
+            )
         except dberr.Error as e:
             print(e)
             await channel.send(DB_ERROR_MSG.format(author.mention))
             raise
         
-        await channel.send('Okay, noted that {} plays {}! Cool!'.format(author.mention, fighter_name))
+        if remove_fighter: 
+            await channel.send('{0} does not main {1}, okay. If you want ' \
+                           'to remove this character entirely, use 8!iplay remove {1}'.format(author.mention, fighter_name))
+        else:
+            await channel.send('I see, so {} mains {}. Because, of course you do.'.format(author.mention, fighter_name))
+
+async def i_pocket(client, message, db_acc):
+    channel = message.channel
+    author = message.author
+
+    tokens = message.content.split(' ')
+
+    if len(tokens) < 2:
+        await channel.send('8!ipocket usage: 8!ipocket [add|remove] <character>')
+        return
+
+    remove_fighter = False
+
+    # Figure out where the fighter name starts
+    # to determine between 8!ipocket pit and 8!ipocket remove/add pit
+    fighter_name_start_idx = 1
+
+    if(tokens[1].lower() == "add"):
+        fighter_name_start_idx = 2
+    elif(tokens[1].lower() == "remove"):    
+        fighter_name_start_idx = 2
+        remove_fighter = True
+
+    if not remove_fighter:
+        # First add character, if necessary
+        await i_play(client, message, db_acc, False)
+
+    # Assume everything after is the fighter name
+    test_fighter_string = ' '.join(tokens[fighter_name_start_idx:])
+    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
+
+    # Might want to fine tune this later, but 80 seems good
+    if(confidence < 80):
+        await channel.send('I\'m really not sure who {} is. Remember: 8!ipocket usage: 8!ipocket [add/remove] <character>'.format(test_fighter_string))
+        return
+
+    if(not await is_registered(db_acc, author.id, channel)):
+        await channel.send('Please register with 8!register first!')
+        return
+    # Adding or removing that you pocket this character   
+    else:
+        try:
+            db_acc.execute_update('''
+                UPDATE
+                    player_fighter
+                SET
+                    is_main      = IF(%(set_pocket)s = 1, 0, is_main),
+                    is_pocket    = %(set_pocket)s,
+                    is_true_main = IF(%(set_pocket)s = 1, 0, is_true_main)
+                WHERE 
+                    player_discord_id = %(discord_id)s AND
+                    fighter_id = (SELECT id FROM fighter WHERE name=%(name)s)''',
+                {
+                    "discord_id": author.id,
+                    "name": fighter_name,
+                    "set_pocket": 0 if remove_fighter else 1
+                }
+            )
+        except dberr.Error as e:
+            print(e)
+            await channel.send(DB_ERROR_MSG.format(author.mention))
+            raise
+        
+        if remove_fighter: 
+            await channel.send('{0} no longer pockets {1}. If you want ' \
+                           'to remove this character entirely, use 8!iplay remove {1}'.format(author.mention, fighter_name))
+        else:
+            await channel.send('I see, so {} pockets {}. Am I supposed to be impressed?'.format(author.mention, fighter_name))
 
 async def who_plays(client, message, db_acc):
     channel = message.channel
