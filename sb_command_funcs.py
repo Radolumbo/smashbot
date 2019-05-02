@@ -35,8 +35,10 @@ async def help(client, message, db_acc):
     embed.set_thumbnail(url=client.user.avatar_url)
     embed.add_field(name='Command', value=help_commands, inline=True)
     embed.add_field(name='Description', value=help_descriptions, inline=True)
-
+    if not isinstance(channel, discord.DMChannel):
+        embed.set_footer(text='Don\'t clutter your channel!  DM me to run commands.')
     await channel.send(embed = embed)
+    
 
 async def register(client, message, db_acc):
     channel = message.channel
@@ -115,6 +117,8 @@ async def register(client, message, db_acc):
                 await channel.send(DB_ERROR_MSG.format(author.mention))
                 raise
             await channel.send('Registered {.author.mention} in the player database!'.format(msg))
+            if not isinstance(channel, discord.DMChannel):
+                await channel.send('Try DMing me to set up the rest of your profile!')
         except asyncio.TimeoutError:
             await channel.send('Time ran out to confirm. Try again, {}.'.format(author.mention))
             return
