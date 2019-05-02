@@ -6,9 +6,9 @@ import sb_db.errors as dberr
 
 async def send_profile(channel, db_acc, user):
     params = {"discord_id": user.id}
-    row = None
+    rows = None
     try:
-        row = db_acc.execute('''
+        rows = db_acc.execute('''
             SELECT
                 switch_tag, switch_code
             FROM 
@@ -16,18 +16,18 @@ async def send_profile(channel, db_acc, user):
             WHERE 
                 p.discord_id = %(discord_id)s''',
             params
-        )[0]
+        )
     except dberr.Error as e:
         print(e)
         await channel.send(DB_ERROR_MSG.format(user.id))
         raise
 
-    if row is None:
+    if rows is None or len(rows) == 0:
         await channel.send('That user hasn\'t registered yet. Get on it, {}! (8!register)'.format(user.mention))
         return
-
-    tag = row["switch_tag"]
-    code = row["switch_code"]
+    prof_rec = rows[0]
+    tag = prof_rec["switch_tag"]
+    code = prof_rec["switch_code"]
 
     rows = None
     # get list of fighters used
