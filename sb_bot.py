@@ -32,7 +32,7 @@ client = discord.Client()
 command_center = CommandCenter(db_accessor, client)
 command_center.register_command(Command(       "help",         funcs.help))
 command_center.register_command(ChannelCommand("register",     funcs.register))
-command_center.register_command(ChannelCommand("update",       funcs.update))
+command_center.register_command(Command       ("update",       funcs.update))
 command_center.register_command(ChannelCommand("playerlist",   funcs.player_list))
 command_center.register_command(Command(       "profile",      funcs.profile))
 command_center.register_command(ChannelCommand("whois",        funcs.who_is))
@@ -58,7 +58,10 @@ async def on_message(message):
     if(not message.content.startswith(command_prefix)):
         return
 
-    command_name = message.content.split(' ')[0][2:]
+    command_string = message.content[len(command_prefix):].strip()
+    # override message content with sanitized input
+    message.content = command_string
+    command_name =  message.content.split(' ')[0]
     rc = await command_center.run_command(command_name, client, message)
 
     if(rc == RC_COMMAND_DNE):

@@ -243,7 +243,7 @@ async def profile(client, message, db_acc):
         mention = author
     elif len(message.mentions) == 1:
         mention = message.mentions[0]
-    elif len(tokens) == 2:
+    elif len(tokens) >= 2:
         await channel.send('No mention included, looking up by Switch tag...')
         await who_is(client, message, db_acc)
         return
@@ -258,7 +258,7 @@ async def who_is(client, message, db_acc):
 
     tokens = message.content.split(' ')
 
-    if len(tokens) != 2:
+    if len(tokens) < 2:
         await channel.send('8!whois usage: 8!whois <switch_tag>')
         return
 
