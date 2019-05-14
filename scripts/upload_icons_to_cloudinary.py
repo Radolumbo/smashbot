@@ -2,7 +2,7 @@ import cloudinary.uploader
 import json
 import os
 import sys
-from sb_constants import SECRET_CONFIG_FILE, TEST_MODE
+from sb_constants import SECRET_CONFIG_FILE, TEST_MODE, BASE_DIR
 
 NSA_IS_WATCHING = {}
 
