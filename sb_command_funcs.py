@@ -5,24 +5,24 @@ import mysql.connector
 import sb_messaging_utils as msg_utils
 from sb_constants import embed_color, DB_ERROR_MSG
 from sb_db.utils import is_registered
-from sb_other_utils import find_fighter, fighter_icon_url
+from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag
 import sb_db.errors as dberr
 
 help_commands = '''\
-8!register <switch_tag> <switch_code>
-8!update (tag|code) <value>
+8!register switch_tag switch_code
+8!update tag|code value
 8!playerlist
-8!profile @discord_user
-8!whois <switch_tag>
-8!imain, 8!ipocket, 8!iplay (add|remove) <fighter>
-8!whoplays <fighter>\
+8!profile @mention|discord_name|switch_tag
+8!whois @mention|discord_name|switch_tag
+8!imain|ipocket|iplay add|remove fighter
+8!whoplays fighter\
 '''
 help_descriptions = '''\
 Register in player list
 Update profile attributes
 List players in server
-View profile of mentioned user (omit to view self)
-Lookup player by switch tag
+View profile of user (omit to view self)
+Same as profile
 Add/remove a fighter to/from your repertoire
 Find players in this server who use a fighter\
 '''
@@ -244,60 +244,66 @@ async def profile(client, message, db_acc):
     elif len(message.mentions) == 1:
         mention = message.mentions[0]
     elif len(tokens) >= 2:
-        await channel.send('No mention included, looking up by Switch tag...')
-        await who_is(client, message, db_acc)
+        await profile_no_mention(client, message, db_acc)
         return
     else:
         await channel.send('8!profile usage: 8!profile @optional_mention')
         return
     await msg_utils.send_profile(channel, db_acc, mention)
 
-async def who_is(client, message, db_acc):
+async def profile_no_mention(client, message, db_acc):
     channel = message.channel
     author = message.author
+
+    await channel.send('No mention included, looking up by tag...')
+    
 
     tokens = message.content.split(' ')
 
     if len(tokens) < 2:
-        await channel.send('8!whois usage: 8!whois <switch_tag>')
+        await channel.send('8!whois usage: 8!whois <tag>')
         return
 
-    lookup = tokens[1]
+    lookup = ' '.join(tokens[1:])
 
-    rows = None
-    
-    try:
-        rows = db_acc.execute('''
-            SELECT 
-                discord_id 
-            FROM
-                player p 
-            INNER JOIN 
-                guild_member g 
-                ON p.discord_id = g.player_discord_id 
-            WHERE 
-                g.guild_id=%(guild_id)s AND 
-                p.switch_tag=%(lookup)s''',
-            {
-                "guild_id": channel.guild.id,
-                "lookup": lookup
-            }
-        )
-    except dberr.Error as e:
-        print(e)
-        await channel.send(DB_ERROR_MSG.format(author.mention))
-        raise
-    
-    count = 0
-    await channel.send('I found the following profiles matching the Switch tag {}:'.format(lookup))
-    for row in rows:
-        user = message.guild.get_member(int(row["discord_id"]))
-        await msg_utils.send_profile(channel, db_acc, user)
-        count += 1
-        return
-    
-    if(count == 0):
+    # Look up by discord tag
+    id_list = await find_users_in_guild_by_name(db_acc, message, lookup, 80)
+
+    await channel.send('I found the following users in this server matching the name {}:'.format(lookup))
+    if len(id_list) == 0:
         await channel.send('None found.')
+
+
+    for id in id_list:
+        user = message.guild.get_member(id)
+        await msg_utils.send_profile(channel, db_acc, user)
+
+        
+    sent_message = await channel.send('*Please click the magnifying glass to search by Switch tag instead*')
+    await sent_message.add_reaction("🔎")
+
+    def check(reaction, user):
+        return user == message.author and reaction.message.id == sent_message.id and str(reaction.emoji) == '🔎'
+
+    try:
+        reaction, user = await client.wait_for('reaction_add', timeout=20.0, check=check)
+    # remove reaction on timeout, so user doesn't think they can still click it
+    except asyncio.TimeoutError:
+        await sent_message.remove_reaction("🔎", client.user)
+    else:
+        await channel.send('Searching by Switch tag...')
+
+        id_list = await find_users_in_guild_by_switch_tag(db_acc, message, lookup, 80)
+
+        await channel.send('I found the following profiles matching the Switch tag {}:'.format(lookup))
+        if(len(id_list) == 0):
+            await channel.send('None found.')
+
+        for id in id_list:
+            user = message.guild.get_member(id)
+            await msg_utils.send_profile(channel, db_acc, user)
+
+    
 
 # send_message is a little hacky, but a VERY convenient
 # way to allow us to reuse "i play" to insert mains/pockets
@@ -328,7 +334,7 @@ async def i_play(client, message, db_acc, send_message = True):
     # Assume everything after is the fighter name
     test_fighter_string = ' '.join(tokens[fighter_name_start_idx:])
 
-    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
+    fighter_name, confidence = await find_fighter(db_acc, channel, test_fighter_string)
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):
@@ -424,7 +430,7 @@ async def i_main(client, message, db_acc):
 
     # Assume everything after is the fighter name
     test_fighter_string = ' '.join(tokens[fighter_name_start_idx:])
-    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
+    fighter_name, confidence = await find_fighter(db_acc, channel, test_fighter_string)
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):
@@ -492,7 +498,7 @@ async def i_pocket(client, message, db_acc):
 
     # Assume everything after is the fighter name
     test_fighter_string = ' '.join(tokens[fighter_name_start_idx:])
-    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
+    fighter_name, confidence = await find_fighter(db_acc, channel, test_fighter_string)
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):
@@ -545,7 +551,7 @@ async def who_plays(client, message, db_acc):
     # Assume everything after is the fighter name
     test_fighter_string = ' '.join(tokens[1:])
 
-    fighter_name, confidence = await find_fighter(db_acc, test_fighter_string)
+    fighter_name, confidence = await find_fighter(db_acc, channel, test_fighter_string)
 
     # Might want to fine tune this later, but 80 seems good
     if(confidence < 80):

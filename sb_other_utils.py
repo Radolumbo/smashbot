@@ -12,7 +12,8 @@ import cloudinary.uploader
 from PIL import Image, ImageDraw, ImageFont
 
 from sb_db.utils import get_fighter_names
-from sb_constants import base_icon_url
+import sb_db.errors as dberr
+from sb_constants import base_icon_url, DB_ERROR_MSG
 
 SECRET_CONFIG_FILE = './super_secret_config.json'
 
@@ -27,8 +28,65 @@ cloudinary.config(
   api_secret = NSA_IS_WATCHING["cloudinary_secret"] 
 )
 
-async def find_fighter(db, test_fighter_string):
-    fighter_names = await get_fighter_names(db)
+async def find_users_in_guild_by_switch_tag(db_acc, message, test_user_string, confidence_threshold):
+    try: 
+        rows = db_acc.execute('''
+            SELECT 
+                switch_tag,
+                discord_id 
+            FROM
+                player p 
+            INNER JOIN 
+                guild_member g 
+                ON p.discord_id = g.player_discord_id 
+            WHERE 
+                g.guild_id=%(guild_id)s''',
+            {
+                "guild_id": message.guild.id
+            }
+        )
+    except dberr.Error as e:
+        print(e)
+        await message.channel.send(DB_ERROR_MSG.format(message.author.mention))
+        raise
+
+    member_dict = {}
+    for row in rows:
+        member_dict[row["switch_tag"]] = row["discord_id"]
+
+    confidence_list = process.extract(test_user_string, member_dict.keys(), scorer=fuzz.token_sort_ratio)
+    return_list = []
+    
+    found_exact = False
+    for (tag, confidence) in confidence_list:
+        if tag == test_user_string:
+            found_exact = True
+            return_list.append(member_dict[tag])
+        elif not found_exact and confidence > confidence_threshold:
+            return_list.append(member_dict[tag])
+
+    return return_list
+
+async def find_users_in_guild_by_name(db_acc, message, test_user_string, confidence_threshold):
+    member_dict = {}
+    for m in message.guild.members:
+        member_dict[m.display_name] = m.id
+
+    confidence_list = process.extract(test_user_string, member_dict.keys(), scorer=fuzz.token_sort_ratio)
+    return_list = []
+    
+    found_exact = False
+    for (name, confidence) in confidence_list:
+        if name == test_user_string:
+            found_exact = True
+            return_list.append(member_dict[name])
+        elif not found_exact and confidence > confidence_threshold:
+            return_list.append(member_dict[name])
+
+    return return_list
+
+async def find_fighter(db_acc, channel, test_fighter_string):
+    fighter_names = await get_fighter_names(db_acc, channel)
     # Use fuzzy wuzzy to find most likely fighter match
     fighter_name, confidence = process.extractOne(test_fighter_string, fighter_names, scorer=fuzz.token_sort_ratio)
     return (fighter_name, confidence)

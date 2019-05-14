@@ -19,7 +19,7 @@ async def is_registered(db_acc, discord_id, channel):
         await channel.send(DB_ERROR_MSG.format(user.id))
         raise
 
-async def get_fighter_names(db_acc):
+async def get_fighter_names(db_acc, channel):
     try:
         data = db_acc.execute('''
             SELECT 
