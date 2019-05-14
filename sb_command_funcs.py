@@ -616,5 +616,5 @@ async def coin_flip(client, message, db_acc):
     flip = random.randint(0, 1)
     embed = discord.Embed(color=embed_color)
     embed.set_author(name = "Heads" if flip == 1 else "Tails", icon_url=client.user.avatar_url)
-    embed.set_image(url=base_url + '/c_thumb,w_75,g_face/' + ("heads_rust.png" if flip == 1 else "tails_rust.png"))
+    embed.set_image(url=base_url + '/c_thumb,w_75,g_face/' + ("heads_rust.png" if flip == 1 else "yoshisumtail.gif"))
     await channel.send(embed=embed)
