@@ -11,10 +11,6 @@ from sb_constants import *
 from sb_db.accessor import DBAccessor
 import sys
 
-TEST_MODE = len(sys.argv) > 1 and (sys.argv[1] == "-t" or sys.argv[1] == "--test")
-
-SECRET_CONFIG_FILE = './super_secret_config.' + ('test' if TEST_MODE else 'prod') + '.json'
-
 NSA_IS_WATCHING = {}
 
 command_prefix = "8!"
