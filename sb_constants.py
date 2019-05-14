@@ -16,7 +16,7 @@ RC_OTHER = -1
 
 TEST_MODE = len(sys.argv) > 1 and (sys.argv[1] == "-t" or sys.argv[1] == "--test")
 
-SECRET_CONFIG_FILE = ('./super_secret_config.test' if TEST_MODE else '/bin/smashbot/super_secret_config.prod') + '.json'
+SECRET_CONFIG_FILE = ('./super_secret_config.test' if TEST_MODE else '/config/smashbot/super_secret_config.prod') + '.json'
 
 SNARKY_IPLAY_RESPONSES = [
     
