@@ -11,3 +11,4 @@ sudo pip3 install --upgrade python-Levenshtein
 sudo rm -rf /backups/smashbot
 sudo mv /bin/smashbot /backups/
 sudo mkdir /bin/smashbot
+
