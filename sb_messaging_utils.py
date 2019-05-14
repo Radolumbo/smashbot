@@ -23,7 +23,7 @@ async def send_profile(channel, db_acc, user):
         raise
 
     if rows is None or len(rows) == 0:
-        await channel.send('That user hasn\'t registered yet. Get on it, {}! (8!register)'.format(user.mention))
+        await channel.send('{} hasn\'t registered yet. Tell them to get on it! (8!register)'.format(user.display_name))
         return
     prof_rec = rows[0]
     tag = prof_rec["switch_tag"]
