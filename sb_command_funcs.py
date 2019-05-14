@@ -16,7 +16,8 @@ help_commands = '''\
 8!profile @mention|discord_name|switch_tag
 8!whois @mention|discord_name|switch_tag
 8!imain|ipocket|iplay add|remove fighter
-8!whoplays fighter\
+8!whoplays fighter
+8!coinflip\
 '''
 help_descriptions = '''\
 Register in player list
@@ -25,7 +26,8 @@ List players in server
 View profile of user (omit to view self)
 Same as profile
 Add/remove a fighter to/from your repertoire
-Find players in this server who use a fighter\
+Find players in this server who use a fighter
+Self-explanatory\
 '''
 async def help(client, message, db_acc):
     channel = message.channel
