@@ -1,4 +1,5 @@
 #!/bin/bash
+
 sudo pip3 install --upgrade discord
 sudo pip3 install --upgrade mysql-connector
 sudo pip3 install --upgrade fuzzywuzzy
