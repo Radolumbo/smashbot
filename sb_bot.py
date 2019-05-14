@@ -41,6 +41,7 @@ command_center.register_command(Command(       "imain",        funcs.i_main))
 command_center.register_command(Command(       "ipocket",      funcs.i_pocket))
 command_center.register_command(ChannelCommand("whoplays",     funcs.who_plays))
 command_center.register_command(ChannelCommand("olimariscool", funcs.olimar_is_cool))
+command_center.register_command(Command       ("coinflip",     funcs.coin_flip))
 
 @client.event
 async def on_ready():

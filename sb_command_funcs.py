@@ -3,10 +3,11 @@ import asyncio
 import mysql.connector
 
 import sb_messaging_utils as msg_utils
-from sb_constants import embed_color, DB_ERROR_MSG
+from sb_constants import embed_color, DB_ERROR_MSG, base_url
 from sb_db.utils import is_registered
 from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag
 import sb_db.errors as dberr
+import random
 
 help_commands = '''\
 8!register switch_tag switch_code
@@ -307,7 +308,7 @@ async def profile_no_mention(client, message, db_acc):
 
 # send_message is a little hacky, but a VERY convenient
 # way to allow us to reuse "i play" to insert mains/pockets
-# when 8!imain or 8!ipocket is used before 8!iplay
+# when 8!imain or 8!ipocket is used before 8!iplay without spamming
 async def i_play(client, message, db_acc, send_message = True):
     channel = message.channel
     author = message.author
@@ -604,3 +605,13 @@ async def olimar_is_cool(client, message, db_acc):
     author = message.author
     await author.edit(nick="Dumb Idiot")
     await channel.send('You reap what you sow.')
+
+async def coin_flip(client, message, db_acc):
+    channel = message.channel
+    author = message.author
+
+    flip = random.randint(0, 1)
+    embed = discord.Embed(color=embed_color)
+    embed.set_author(name = "Heads" if flip == 1 else "Tails", icon_url=client.user.avatar_url)
+    embed.set_image(url=base_url + '/c_thumb,w_75,g_face/' + ("heads_rust.png" if flip == 1 else "tails_rust.png"))
+    await channel.send(embed=embed)
