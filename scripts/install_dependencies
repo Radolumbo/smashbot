@@ -1,0 +1,8 @@
+#!/bin/bash
+sudo pip3 install --upgrade discord
+sudo pip3 install --upgrade mysql-connector
+sudo pip3 install --upgrade fuzzywuzzy
+sudo pip3 install --upgrade numpy
+sudo pip3 install --upgrade cloudinary
+sudo pip3 install --upgrade pillow
+sudo pip3 install --upgrade python-Levenshtein
