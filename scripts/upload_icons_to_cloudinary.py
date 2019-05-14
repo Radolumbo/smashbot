@@ -1,8 +1,11 @@
 import cloudinary.uploader
 import json
 import os
+import sys
 
-SECRET_CONFIG_FILE = '../super_secret_config.json'
+TEST_MODE = len(sys.argv) > 1 and (sys.argv[1] == "-t" or sys.argv[1] == "--test")
+
+SECRET_CONFIG_FILE = './super_secret_config.' + ('test' if TEST_MODE else 'prod') + '.json'
 
 NSA_IS_WATCHING = {}
 

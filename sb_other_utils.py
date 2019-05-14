@@ -15,7 +15,9 @@ from sb_db.utils import get_fighter_names
 import sb_db.errors as dberr
 from sb_constants import base_icon_url, DB_ERROR_MSG
 
-SECRET_CONFIG_FILE = './super_secret_config.json'
+TEST_MODE = len(sys.argv) > 1 and (sys.argv[1] == "-t" or sys.argv[1] == "--test")
+
+SECRET_CONFIG_FILE = './super_secret_config.' + ('test' if TEST_MODE else 'prod') + '.json'
 
 NSA_IS_WATCHING = {}
 

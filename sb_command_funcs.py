@@ -79,7 +79,7 @@ async def register(client, message, db_acc):
 
     # First time registration, wrong number of arguments
     if(not is_reg and len(tokens) != 3):
-        await channel.send('8!register usage: 8!register <swich_tag> <switch_code>')
+        await channel.send('8!register usage: 8!register switch_tag switch_code')
         return
     # First time registration, wrong switch code format
     #TODO: use regex to enforce more rigid structure
@@ -250,7 +250,8 @@ async def profile(client, message, db_acc):
         await profile_no_mention(client, message, db_acc)
         return
     else:
-        await channel.send('8!profile usage: 8!profile @optional_mention')
+        # Show whois or profile based on what they wrote
+        await channel.send('8!' + tokens[0] + ' usage: 8!' + tokens[0] + ' @mention|discord_name|switch_tag')
         return
     await msg_utils.send_profile(channel, db_acc, mention)
 
