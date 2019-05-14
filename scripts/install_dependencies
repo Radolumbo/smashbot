@@ -8,5 +8,6 @@ sudo pip3 install --upgrade cloudinary
 sudo pip3 install --upgrade pillow
 sudo pip3 install --upgrade python-Levenshtein
 
-sudo mv /bin/smashbot /backups/smashbot
+sudo rm -rf /backups/smashbot
+sudo mv /bin/smashbot /backups/
 sudo mkdir /bin/smashbot
