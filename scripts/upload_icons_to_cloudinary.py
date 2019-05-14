@@ -11,8 +11,8 @@ with open(SECRET_CONFIG_FILE) as json_file:
 
 
 
-for f in os.listdir("../img"):
-    cloudinary.uploader.upload("../img/" + f,
+for f in os.listdir(BASE_DIR + "/../img"):
+    cloudinary.uploader.upload(BASE_DIR + "/../img/" + f,
         folder="smash_icons",
         overwrite=True,
         public_id=os.path.splitext(f)[0],

@@ -97,11 +97,11 @@ def fighter_amalgam_url(amalgam_name):
     return base_icon_url + 'amalgams/' + amalgam_name + '.png'
 
 def create_stitched_image(fighters):
-    fighter_img_paths = ['./img/' + re.sub('[^A-Za-z]', '', fighter["name"]) + str(fighter["costume_number"]) + '.png' for fighter in fighters]
+    fighter_img_paths = [BASE_DIR + '/img/' + re.sub('[^A-Za-z]', '', fighter["name"]) + str(fighter["costume_number"]) + '.png' for fighter in fighters]
     images = [Image.open(im) for im in fighter_img_paths]
 
-    font18 = ImageFont.truetype('./font/Roboto-Bold.ttf', size=18)
-    font22 = ImageFont.truetype('./font/Roboto-Bold.ttf', size=22)
+    font18 = ImageFont.truetype(BASE_DIR + '/font/Roboto-Bold.ttf', size=18)
+    font22 = ImageFont.truetype(BASE_DIR + '/font/Roboto-Bold.ttf', size=22)
 
     for i in range(0, len(fighters)):
         image = images[i]
@@ -134,7 +134,7 @@ def create_stitched_image(fighters):
 
     # randomly generate file name
     # to avoid conflicts of writing to same file 
-    temp_file_name = './img/tmp/' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=32)) + '.png'
+    temp_file_name = BASE_DIR + '/img/tmp/' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=32)) + '.png'
     new_img.save(temp_file_name)
     
     # create cloudinary file name for this combination of characters
