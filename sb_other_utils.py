@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from sb_db.utils import get_fighter_names
 import sb_db.errors as dberr
-from sb_constants import base_icon_url, DB_ERROR_MSG, SECRET_CONFIG_FILE, TEST_MODE, BASE_DIR
+from sb_constants import base_icon_url, DB_ERROR_MSG, SECRET_CONFIG_FILE, TEST_MODE, BASE_DIR, SNARKY_IPLAY_RESPONSES
 
 
 NSA_IS_WATCHING = {}
@@ -161,4 +161,6 @@ def create_stitched_image(fighters):
 def delete_image(file_path):
     os.remove(file_path)
 
-    
+def random_snarky_comment():
+    num = random.randint(0, len(SNARKY_IPLAY_RESPONSES) - 1)
+    return SNARKY_IPLAY_RESPONSES[num]

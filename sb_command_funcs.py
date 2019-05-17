@@ -5,7 +5,7 @@ import mysql.connector
 import sb_messaging_utils as msg_utils
 from sb_constants import embed_color, DB_ERROR_MSG, base_url
 from sb_db.utils import is_registered
-from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag
+from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag, random_snarky_comment
 import sb_db.errors as dberr
 import random
 
@@ -404,7 +404,7 @@ async def i_play(client, message, db_acc, send_message = True):
             raise
         
         if send_message:
-            await channel.send('Okay, noted that {} plays {}! Cool!'.format(author.mention, fighter_name))
+            await channel.send('Okay, noted that {} plays {}. {}'.format(author.mention, fighter_name, random_snarky_comment()))
 
 async def i_main(client, message, db_acc):
     channel = message.channel
@@ -472,7 +472,7 @@ async def i_main(client, message, db_acc):
             await channel.send('{0} does not main {1}, okay. If you want ' \
                            'to remove this character entirely, use 8!iplay remove {1}'.format(author.mention, fighter_name))
         else:
-            await channel.send('I see, so {} mains {}. Because, of course you do.'.format(author.mention, fighter_name))
+            await channel.send('I see, so {} mains {}. {}'.format(author.mention, fighter_name, random_snarky_comment()))
 
 async def i_pocket(client, message, db_acc):
     channel = message.channel
@@ -540,7 +540,7 @@ async def i_pocket(client, message, db_acc):
             await channel.send('{0} no longer pockets {1}. If you want ' \
                            'to remove this character entirely, use 8!iplay remove {1}'.format(author.mention, fighter_name))
         else:
-            await channel.send('I see, so {} pockets {}. Am I supposed to be impressed?'.format(author.mention, fighter_name))
+            await channel.send('I see, so {} pockets {}. {}'.format(author.mention, fighter_name, random_snarky_comment()))
 
 async def who_plays(client, message, db_acc):
     channel = message.channel

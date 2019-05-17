@@ -21,9 +21,25 @@ SECRET_CONFIG_FILE = ('./super_secret_config.test' if TEST_MODE else '/config/sm
 BASE_DIR = '.' if TEST_MODE else '/bin/smashbot'
 
 SNARKY_IPLAY_RESPONSES = [
-    
-
-
-
-
+    "Because, of course you do.",
+    "Am I supposed to be impressed?",
+    "I'm actually a little impressed.",
+    "Can you even hold a controller?",
+    "Riding the bandwagon, I see.",
+    "I mean, I guess that's a character in this game.",
+    "Really, of everyone you could have picked?",
+    "Wouldn't have been my choice.",
+    "Cool!",
+    "Wowie!",
+    "Look out chat, we got a badass over here.",
+    "Your mother would be so proud.",
+    "Honestly, you might as well just pick random.",
+    "It's what Sakurai would have wanted.",
+    "Great, another one.",
+    "Nice choice!",
+    "No comment.",
+    "You always did strike me as a good decision-maker.",
+    "**NOTICE**: Your account has been flagged for lameness.",
+    "Keep that up, and I'll have to ban you.",
+    "I'd love to see it in action!"
 ]
