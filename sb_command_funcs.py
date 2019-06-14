@@ -259,7 +259,7 @@ async def profile_no_mention(client, message, db_acc):
     channel = message.channel
     author = message.author
 
-    await channel.send('No mention included, looking up by tag...')
+    await channel.send('No mention included, looking up by Discord name...')
     
 
     tokens = message.content.split(' ')
