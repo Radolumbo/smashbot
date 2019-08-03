@@ -33,6 +33,7 @@ command_center.register_command(ChannelCommand("playerlist",   funcs.player_list
 command_center.register_command(Command(       "profile",      funcs.profile))
 command_center.register_command(ChannelCommand("whois",        funcs.profile))
 command_center.register_command(Command(       "iplay",        funcs.i_play))
+command_center.register_command(Command(       "remove",       funcs.i_dont_play))
 command_center.register_command(Command(       "imain",        funcs.i_main))
 command_center.register_command(Command(       "ipocket",      funcs.i_pocket))
 command_center.register_command(ChannelCommand("whoplays",     funcs.who_plays))

@@ -16,7 +16,9 @@ help_commands = '''\
 8!profile @mention|discord_name|switch_tag
 8!whois @mention|discord_name|switch_tag
 8!imain|ipocket|iplay add|remove fighter
+8!remove fighter
 8!whoplays fighter
+8!fighter fighter
 8!coinflip\
 '''
 help_descriptions = '''\
@@ -26,7 +28,9 @@ List players in server
 View profile of user (omit to view self)
 Same as profile
 Add/remove a fighter to/from your repertoire
+Removes a fighter from your repertoire
 Find players in this server who use a fighter
+View details/costumes for a fighter
 Self-explanatory\
 '''
 async def help(client, message, db_acc):
@@ -307,7 +311,18 @@ async def profile_no_mention(client, message, db_acc):
             user = message.guild.get_member(id)
             await msg_utils.send_profile(channel, db_acc, user)
 
-    
+async def i_dont_play(client, message, db_acc):
+    tokens = message.content.split(' ')
+
+    if len(tokens) < 2:
+        if send_message:
+            await channel.send('8!remove usage: 8!remove <character>')
+        return
+
+    message.content = tokens[0] + " remove " + ' '.join(tokens[1:])
+
+    await i_play(client, message, db_acc)
+
 
 # send_message is a little hacky, but a VERY convenient
 # way to allow us to reuse "i play" to insert mains/pockets
