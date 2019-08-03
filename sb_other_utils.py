@@ -90,8 +90,8 @@ async def find_fighter(db_acc, channel, test_fighter_string):
     fighter_name, confidence = process.extractOne(test_fighter_string, fighter_names, scorer=fuzz.token_sort_ratio)
     return (fighter_name, confidence)
 
-def fighter_icon_url(fighter_name):
-    return base_icon_url + re.sub('[^A-Za-z]', '', fighter_name) + '0' + '.png'
+def fighter_icon_url(fighter_name, idx=0):
+    return base_icon_url + re.sub('[^A-Za-z]', '', fighter_name) + str(idx) + '.png'
 
 def fighter_amalgam_url(amalgam_name):
     return base_icon_url + 'amalgams/' + amalgam_name + '.png'
@@ -112,17 +112,17 @@ def create_stitched_image(fighters):
         
         # Draw in black for an outline first,
         # then draw in color
-        if fighter["is_true_main"]:
+        if fighter.get("is_true_main", False):
             message = "M" 
             draw.text((0, 0), message, fill=color, font=font22)
             color = 'rgb(0, 255, 255)'
             draw.text((2, 2), message, fill=color, font=font18)
-        elif fighter["is_main"]:        
+        elif fighter.get("is_main", False):        
             message = "M" 
             draw.text((0, 0), message, fill=color, font=font22)
             color = 'rgb(0, 255, 0)'
             draw.text((2, 2), message, fill=color, font=font18)
-        elif fighter["is_pocket"]:
+        elif fighter.get("is_pocket", False):
             message = "P" 
             draw.text((0, 0), message, fill=color, font=font22)
             color = 'rgb(255, 0, 0)'
@@ -142,11 +142,11 @@ def create_stitched_image(fighters):
     amalgam_name = ''
     for fighter in fighters:
         amalgam_name += re.sub('[^A-Za-z]', '', fighter["name"]) + str(fighter["costume_number"])
-        if fighter["is_true_main"]:
+        if fighter.get("is_true_main", False):
             amalgam_name += "TRUE"
-        elif fighter["is_main"]:
+        elif fighter.get("is_main", False):
             amalgam_name += "MAIN"
-        elif fighter["is_pocket"]:
+        elif fighter.get("is_pocket", False):
             amalgam_name += "POCK"
 
     res = cloudinary.uploader.upload(temp_file_name,

@@ -5,7 +5,7 @@ import mysql.connector
 import sb_messaging_utils as msg_utils
 from sb_constants import embed_color, DB_ERROR_MSG, base_url
 from sb_db.utils import is_registered
-from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag, random_snarky_comment
+from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag, random_snarky_comment, create_stitched_image
 import sb_db.errors as dberr
 import random
 
@@ -600,6 +600,45 @@ async def who_plays(client, message, db_acc):
     # Example: Pokemon Trainer becomes Pokmon Trainer due to special e
     embed.set_author(name = "{} Players".format(fighter_name), icon_url=fighter_icon_url(fighter_name))
     
+    #embed.add_field(name='', value=tag, inline=True)
+    await channel.send(embed=embed)
+
+async def fighter_info(client, message, db_acc):
+    channel = message.channel
+    author = message.author
+
+    tokens = message.content.split(' ')
+
+    if len(tokens) < 2:
+        await channel.send('8!fighter usage: 8!fighter <character>')
+        return
+
+    # Assume everything after is the fighter name
+    test_fighter_string = ' '.join(tokens[1:])
+
+    fighter_name, confidence = await find_fighter(db_acc, channel, test_fighter_string)
+
+    # Might want to fine tune this later, but 80 seems good
+    if(confidence < 80):
+        await channel.send('I\'m really not sure who {} is. Remember: 8!fighter usage: 8!fighter <character>'.format(test_fighter_string))
+        return
+
+    fighter_alts = [
+        {
+            "name": fighter_name,
+            "costume_number": num
+        }
+        for num in range(0,8)
+    ]
+    
+    amalgam_url = create_stitched_image(fighter_alts)
+
+    embed = discord.Embed(color=embed_color, description="{} details...".format(fighter_name))
+    embed.set_image(url=amalgam_url)
+    # Regex to remove ALL special characters from fighter name, then create url
+    # Example: Pokemon Trainer becomes Pokmon Trainer due to special e
+    embed.set_author(name = "{}".format(fighter_name), icon_url=fighter_icon_url(fighter_name, 0))
+
     #embed.add_field(name='', value=tag, inline=True)
     await channel.send(embed=embed)
 
