@@ -359,7 +359,7 @@ async def i_play(client, message, db_acc, send_message = True):
     if(confidence < 80):
         if send_message:
             await channel.send('I\'m really not sure who {} is. Remember: 8!iplay usage:' \
-                           ' 8!iplay [add/remove] <character>'.format(test_fighter_string))
+                           ' Check 8!help for command usage.'.format(test_fighter_string))
         return
 
     if(not await is_registered(db_acc, author.id, channel)):
