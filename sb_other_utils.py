@@ -85,10 +85,10 @@ async def find_users_in_guild_by_name(db_acc, message, test_user_string, confide
     return return_list
 
 async def find_fighter(db_acc, channel, test_fighter_string):
-    fighter_names = await get_fighter_names(db_acc, channel)
+    alias_to_name = await get_fighter_names(db_acc, channel)
     # Use fuzzy wuzzy to find most likely fighter match
-    fighter_name, confidence = process.extractOne(test_fighter_string, fighter_names, scorer=fuzz.token_sort_ratio)
-    return (fighter_name, confidence)
+    fighter_alias, confidence = process.extractOne(test_fighter_string, alias_to_name.keys(), scorer=fuzz.token_sort_ratio)
+    return (alias_to_name[fighter_alias], confidence)
 
 def fighter_icon_url(fighter_name, idx=0):
     return base_icon_url + re.sub('[^A-Za-z]', '', fighter_name) + str(idx) + '.png'

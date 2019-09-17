@@ -23,12 +23,23 @@ async def get_fighter_names(db_acc, channel):
     try:
         data = db_acc.execute('''
             SELECT 
+                name AS alias,
                 name
             FROM 
-                fighter''',
+                fighter
+            UNION ALL
+            SELECT
+                fa.alias,
+                f.name
+            FROM
+                fighter_alias fa
+            INNER JOIN
+                fighter f
+                ON f.id = fa.fighter_id''',
             {}
         )
-        fighter_names = [data[i]["name"] for i in range(0,len(data))]
+
+        fighter_names = {data[i]["alias"]:data[i]["name"] for i in range(0,len(data))}
         
         return fighter_names
     except dberr.Error as e:

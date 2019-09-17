@@ -107,4 +107,6 @@ venv.bak/
 
 super_secret_config.json
 
+passes.txt
+
 .vscode/
