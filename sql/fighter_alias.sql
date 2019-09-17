@@ -135,3 +135,10 @@ SELECT
     'GW'
 FROM fighter
 WHERE name = 'Mr. Game & Watch';
+
+INSERT INTO fighter_alias(fighter_id, alias)
+SELECT
+    id,
+    'Daddy'
+FROM fighter
+WHERE name = 'Ganondorf';
