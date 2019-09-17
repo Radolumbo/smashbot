@@ -107,3 +107,31 @@ SELECT
     'Sans'
 FROM fighter
 WHERE name = 'Mii Gunner';
+
+INSERT INTO fighter_alias(fighter_id, alias)
+SELECT
+    id,
+    'Trainer'
+FROM fighter
+WHERE name = 'Pokémon Trainer';
+
+INSERT INTO fighter_alias(fighter_id, alias)
+SELECT
+    id,
+    'Rosa'
+FROM fighter
+WHERE name = 'Rosalina & Luma';
+
+INSERT INTO fighter_alias(fighter_id, alias)
+SELECT
+    id,
+    'DDD'
+FROM fighter
+WHERE name = 'King Dedede';
+
+INSERT INTO fighter_alias(fighter_id, alias)
+SELECT
+    id,
+    'GW'
+FROM fighter
+WHERE name = 'Mr. Game & Watch';
