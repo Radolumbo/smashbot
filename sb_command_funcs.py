@@ -19,6 +19,9 @@ help_commands = '''\
 8!remove fighter
 8!whoplays fighter
 8!fighter fighter
+8!hmu
+8!nothx
+8!letsplay
 8!coinflip\
 '''
 help_descriptions = '''\
@@ -31,6 +34,9 @@ Add/remove a fighter to/from your repertoire
 Removes a fighter from your repertoire
 Find players in this server who use a fighter
 View details/costumes for a fighter
+Marks you as looking for a match
+Marks you as not looking for a match
+Pings everyone looking for a match
 Self-explanatory\
 '''
 async def help(client, message, db_acc):
@@ -662,6 +668,39 @@ async def olimar_is_cool(client, message, db_acc):
     author = message.author
     await author.edit(nick="Dumb Idiot")
     await channel.send('You reap what you sow.')
+
+async def looking_for_match(client, message, db_acc):
+    channel = message.channel
+    author = message.author
+    role = discord.utils.get(author.guild.roles, name="looking to smash")
+    if role == None:
+        await author.guild.create_role(name="looking to smash", mentionable=True)
+        role = discord.utils.get(author.guild.roles, name="looking to smash")
+
+    await author.add_roles(role)
+    await channel.send('{} wants to be pinged for matches.'.format(author.mention))
+
+# TODO: combine this with above function
+async def not_looking_for_match(client, message, db_acc):
+    channel = message.channel
+    author = message.author
+    role = discord.utils.get(author.guild.roles, name="looking to smash")
+    if role == None:
+        await author.guild.create_role(name="looking to smash", mentionable=True)
+        role = discord.utils.get(author.guild.roles, name="looking to smash")
+
+    await author.remove_roles(role)
+    await channel.send('{} does not want to be pinged for matches.'.format(author.mention))
+
+async def ping_match_lookers(client, message, db_acc):
+    channel = message.channel
+    author = message.author
+    role = discord.utils.get(author.guild.roles, name="looking to smash")
+    if role == None:
+        await author.guild.create_role(name="looking to smash", mentionable=True)
+        role = discord.utils.get(author.guild.roles, name="looking to smash")
+
+    await channel.send('{} is looking for a match! Who is {}?'.format(author.mention, role.mention))
 
 async def coin_flip(client, message, db_acc):
     channel = message.channel

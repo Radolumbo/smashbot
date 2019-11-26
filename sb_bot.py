@@ -40,11 +40,21 @@ command_center.register_command(ChannelCommand("whoplays",     funcs.who_plays))
 command_center.register_command(Command(       "fighter",      funcs.fighter_info))
 command_center.register_command(ChannelCommand("olimariscool", funcs.olimar_is_cool))
 command_center.register_command(Command       ("coinflip",     funcs.coin_flip))
+command_center.register_command(ChannelCommand("hmu",          funcs.looking_for_match))
+command_center.register_command(ChannelCommand("nothx",        funcs.not_looking_for_match))
+command_center.register_command(ChannelCommand("letsplay",     funcs.ping_match_lookers))
 
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game(name="{}help for commands".format(command_prefix)))
     print('We have logged in as {0.user}'.format(client))
+
+# Set up when joining a new guild
+# This probably doesn't work currently since the bot 
+# won't have create role permissions when joining?
+#@client.event
+#async def on_guild_join(guild):
+#    await guild.create_role(name="looking to smash", mentionable=True)
 
 @client.event
 async def on_message(message):
