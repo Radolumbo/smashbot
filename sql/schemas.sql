@@ -1,0 +1,2 @@
+CREATE SCHEMA player;
+CREATE SCHEMA fighter;

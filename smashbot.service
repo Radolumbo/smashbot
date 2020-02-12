@@ -1,0 +1,10 @@
+[Unit]
+Description=Smashbot! Handles smashbot requests
+
+[Service]
+ExecStart=/usr/local/bin/python3 /bin/smashbot/sb_bot.py
+Restart=always
+Restart=30
+
+[Install]
+WantedBy=multi-user.target
