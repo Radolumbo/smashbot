@@ -8,6 +8,7 @@ import numpy as np
 import json
 import cloudinary
 import cloudinary.uploader
+import ujson
 
 from PIL import Image, ImageDraw, ImageFont
 
