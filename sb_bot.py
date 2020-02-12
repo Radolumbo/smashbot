@@ -9,19 +9,21 @@ from sb_channelcommand import ChannelCommand
 from sb_constants import *
 from sb_db.accessor import DBAccessor
 import sys
+import ujson
 
+from google.cloud import secretmanager
 
-NSA_IS_WATCHING = {}
 
 command_prefix = "8!"
 
 if TEST_MODE:
     command_prefix = "7!"
 
-with open(SECRET_CONFIG_FILE) as json_file:  
-    NSA_IS_WATCHING = json.load(json_file)
+client = secretmanager.SecretManagerServiceClient()
+path = client.secret_version_path("discord-smashbot", "super_secret_smashbot_dev_config" if TEST_MODE else "super_secret_smashbot_prod_config", "latest")
+NSA_IS_WATCHING = ujson.loads(client.access_secret_version(path).payload.data.decode("utf-8"))
 
-db_accessor = DBAccessor(NSA_IS_WATCHING["db_host"], NSA_IS_WATCHING["db_name"], NSA_IS_WATCHING["db_user"], NSA_IS_WATCHING["db_pass"])
+db_accessor = DBAccessor(NSA_IS_WATCHING["db_host"], NSA_IS_WATCHING["db_name"], NSA_IS_WATCHING["db_port"], NSA_IS_WATCHING["db_user"], NSA_IS_WATCHING["db_pass"])
 
 client = discord.Client() 
 

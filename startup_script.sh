@@ -28,7 +28,7 @@ if [ ! -d $git_path]; then
 fi
 
 if [ ! -d "$git_path/.git"]; then
-    gcloud source repos clone github_radolumbo_smashbot .
+    gcloud source repos clone github_radolumbo_smashbot $git_path
 fi
 
 sudo pip3 install --upgrade -r "$git_path/requirements.txt"

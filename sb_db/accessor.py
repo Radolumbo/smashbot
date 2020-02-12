@@ -9,8 +9,8 @@ import sb_db.errors as dberr
 class DBAccessor:
     StatusCode = Enum("StatusCode", "SUCCESS DUPLICATE")
 
-    def __init__(self, host, name, user, password):
-        self.pool = psycopg2.pool.SimpleConnectionPool(1, 10, database="smashdb", user="nick", password="xxx", host="127.0.0.1", port="5432")
+    def __init__(self, host, name, port, user, password):
+        self.pool = psycopg2.pool.SimpleConnectionPool(1, 10, database=name, user=user, password=password, host=host, port=port)
 
     def execute(self, query, params, is_update=False):
         # Try once, if DB fails, will sleep + try again
