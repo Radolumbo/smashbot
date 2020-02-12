@@ -4,12 +4,12 @@ import discord
 import json
 from sb_commandcenter import *
 import sb_command_funcs as funcs
-import mysql.connector
 from sb_command import Command
 from sb_channelcommand import ChannelCommand
 from sb_constants import *
 from sb_db.accessor import DBAccessor
 import sys
+
 
 NSA_IS_WATCHING = {}
 

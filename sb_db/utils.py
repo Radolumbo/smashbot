@@ -7,7 +7,7 @@ async def is_registered(db_acc, discord_id, channel):
             SELECT 
                 COUNT(1) as registered
             FROM 
-                player 
+                player.player 
             WHERE 
                 discord_id = %(discord_id)s''',
             {
@@ -16,7 +16,8 @@ async def is_registered(db_acc, discord_id, channel):
         )[0]["registered"] > 0
     except dberr.Error as e:
         print(e)
-        await channel.send(DB_ERROR_MSG.format(user.id))
+        # TODO: add user name
+        await channel.send(DB_ERROR_MSG.format("Unknown"))
         raise
 
 async def get_fighter_names(db_acc, channel):
@@ -26,15 +27,15 @@ async def get_fighter_names(db_acc, channel):
                 name AS alias,
                 name
             FROM 
-                fighter
+                fighter.fighter
             UNION ALL
             SELECT
                 fa.alias,
                 f.name
             FROM
-                fighter_alias fa
+                fighter.fighter_alias fa
             INNER JOIN
-                fighter f
+                fighter.fighter f
                 ON f.id = fa.fighter_id''',
             {}
         )
@@ -44,5 +45,6 @@ async def get_fighter_names(db_acc, channel):
         return fighter_names
     except dberr.Error as e:
         print(e)
-        await channel.send(DB_ERROR_MSG.format(user.id))
+        #TODO: add user name
+        await channel.send(DB_ERROR_MSG.format("Unknown"))
         raise

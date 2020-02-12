@@ -1,6 +1,5 @@
 import discord
 import asyncio
-import mysql.connector
 
 import sb_messaging_utils as msg_utils
 from sb_constants import embed_color, DB_ERROR_MSG, base_url
@@ -63,7 +62,7 @@ async def register(client, message, db_acc):
             SELECT 
                 COUNT(1) AS registered
             FROM 
-                guild_member
+                player.guild_member
             WHERE 
                 player_discord_id = %(discord_id)s AND 
                 guild_id = %(guild_id)s''',
@@ -116,7 +115,7 @@ async def register(client, message, db_acc):
             try:
                 db_acc.execute_update('''
                     INSERT INTO 
-                        player (discord_id, switch_tag, switch_code) 
+                        player.player (discord_id, switch_tag, switch_code) 
                     VALUES
                         (%(discord_id)s, %(tag)s, %(code)s)''',
                     {
@@ -140,7 +139,7 @@ async def register(client, message, db_acc):
     try:
         db_acc.execute_update('''
             INSERT INTO 
-                guild_member (player_discord_id, guild_id) 
+                player.guild_member (player_discord_id, guild_id) 
             VALUES 
                 (%(discord_id)s, %(guild_id)s)''',
             {
@@ -208,9 +207,9 @@ async def player_list(client, message, db_acc):
             SELECT 
                 discord_id, switch_tag, switch_code 
             FROM 
-                player p 
+                player.player p 
             INNER JOIN 
-                guild_member g 
+                player.guild_member g
                 ON p.discord_id = g.player_discord_id 
             WHERE 
                 g.guild_id=%(guild_id)s''',
@@ -378,10 +377,10 @@ async def i_play(client, message, db_acc, send_message = True):
         try:
             db_acc.execute_update('''
                 DELETE FROM
-                    player_fighter 
+                    player.player_fighter 
                 WHERE 
                     player_discord_id = %(discord_id)s AND
-                    fighter_id = (SELECT id FROM fighter WHERE name=%(name)s)''',
+                    fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
                     "discord_id": author.id,
                     "name": fighter_name
@@ -399,14 +398,14 @@ async def i_play(client, message, db_acc, send_message = True):
         try:
             db_acc.execute_update('''
                 INSERT INTO
-                    player_fighter (player_discord_id, fighter_id, is_main, is_true_main)
+                    player.player_fighter (player_discord_id, fighter_id, is_main, is_true_main)
                 SELECT 
                     %(discord_id)s,
                     id as fighter_id,
-                    0,
-                    0
+                    false,
+                    false
                 FROM
-                    fighter
+                    fighter.fighter
                 WHERE 
                     name=%(name)s''',
                 {
@@ -414,7 +413,7 @@ async def i_play(client, message, db_acc, send_message = True):
                     "name": fighter_name
                 }
             )
-        except dberr.DuplicateKeyError as e:
+        except dberr.IntegrityError as e:
             if send_message:
                 await channel.send('I already know you play {}, {}!'.format(fighter_name, author.mention))
             return
@@ -470,14 +469,14 @@ async def i_main(client, message, db_acc):
         try:
             db_acc.execute_update('''
                 UPDATE
-                    player_fighter
+                    player.player_fighter
                 SET
                     is_main      = %(set_main)s,
-                    is_pocket    = IF(%(set_main)s = 1, 0, is_pocket),
-                    is_true_main = IF(%(set_main)s = 1, is_true_main, 0)
+                    is_pocket    = IF(%(set_main)s = true, false, is_pocket),
+                    is_true_main = IF(%(set_main)s = true, is_true_main, false)
                 WHERE 
                     player_discord_id = %(discord_id)s AND
-                    fighter_id = (SELECT id FROM fighter WHERE name=%(name)s)''',
+                    fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
                     "discord_id": author.id,
                     "name": fighter_name,
@@ -540,12 +539,12 @@ async def i_pocket(client, message, db_acc):
                 UPDATE
                     player_fighter
                 SET
-                    is_main      = IF(%(set_pocket)s = 1, 0, is_main),
+                    is_main      = IF(%(set_pocket)s = true, false, is_main),
                     is_pocket    = %(set_pocket)s,
-                    is_true_main = IF(%(set_pocket)s = 1, 0, is_true_main)
+                    is_true_main = IF(%(set_pocket)s = true, false, is_true_main)
                 WHERE 
                     player_discord_id = %(discord_id)s AND
-                    fighter_id = (SELECT id FROM fighter WHERE name=%(name)s)''',
+                    fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
                     "discord_id": author.id,
                     "name": fighter_name,
@@ -588,12 +587,12 @@ async def who_plays(client, message, db_acc):
             SELECT
                 pf.player_discord_id as discord_id
             FROM
-                player_fighter pf
+                player.player_fighter pf
             INNER JOIN
-                fighter f
+                fighter.fighter f
                 ON f.id = pf.fighter_id
             INNER JOIN
-                guild_member gm
+                player.guild_member gm
                 ON gm.player_discord_id = pf.player_discord_id
             WHERE 
                 f.name=%(fighter_name)s AND

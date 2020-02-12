@@ -1,6 +1,7 @@
-from mysql.connector import errors as sqlerr
-from mysql.connector import errorcode as sqlerrcode
-from mysql.connector import pooling
+import psycopg2
+import psycopg2.extras
+import psycopg2.pool
+
 from enum import Enum
 import time
 import sb_db.errors as dberr
@@ -9,18 +10,13 @@ class DBAccessor:
     StatusCode = Enum("StatusCode", "SUCCESS DUPLICATE")
 
     def __init__(self, host, name, user, password):
-        self.pool = pooling.MySQLConnectionPool(pool_name = "smash_pool",
-                                                    pool_size = pooling.CNX_POOL_MAXSIZE,
-                                                    database = name,
-                                                    host = host,
-                                                    user = user,
-                                                    passwd = password)
+        self.pool = psycopg2.pool.SimpleConnectionPool(1, 10, database="smashdb", user="nick", password="xxx", host="127.0.0.1", port="5432")
 
     def execute(self, query, params, is_update=False):
         # Try once, if DB fails, will sleep + try again
         try:
             return self.__execute_impl(query, params, is_update)
-        except dberr.DuplicateKeyError:
+        except dberr.IntegrityError:
             raise
         except dberr.Error:
             time.sleep(.250)
@@ -33,22 +29,20 @@ class DBAccessor:
         conn = None
         cursor = None
         try: 
-            conn = self.pool.get_connection()
-            cursor = conn.cursor(dictionary=True)
+            conn = self.pool.getconn()
+            conn.set_client_encoding('UTF8')
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             cursor.execute(query, params)
             if is_update:
                 conn.commit()
             else:
                 return cursor.fetchall()
-        except sqlerr.PoolError as e:
-            raise dberr.PoolBusyError from e
-        except sqlerr.IntegrityError as e:
+        except psycopg2.DatabaseError as e:
+            raise dberr.DatabaseError from e
+        except psycopg2.IntegrityError as e:
             if is_update:
                 conn.rollback()
-            if(e.errno == sqlerrcode.ER_DUP_ENTRY):
-                raise dberr.DuplicateKeyError from e
-            else:
-                raise dberr.Error("Executing {} failed for unknown reasons.".format(query)) from e
+            raise dberr.IntegrityError
         except Exception as e:
             if is_update:
                 conn.rollback()
@@ -58,4 +52,4 @@ class DBAccessor:
                 cursor.close()
             # returns connection back to pool
             if conn is not None:
-                conn.close()
+                self.pool.putconn(conn)

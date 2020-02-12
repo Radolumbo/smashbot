@@ -1,8 +1,8 @@
 class Error(Exception):
     pass
 
-class DuplicateKeyError(Error):
+class IntegrityError(Error):
     pass
 
-class PoolBusyError(Error):
+class DatabaseError(Error):
     pass

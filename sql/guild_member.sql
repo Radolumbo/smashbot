@@ -1,10 +1,10 @@
 -- Stores who is registered in which servers (relationship between player and guild (no table currently))
 
-CREATE TABLE guild_member
+CREATE TABLE player.guild_member
 (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     player_discord_id BIGINT NOT NULL,
     guild_id BIGINT NOT NULL,
     FOREIGN KEY (player_discord_id)
-        REFERENCES player(discord_id)
+        REFERENCES player.player(discord_id)
 );

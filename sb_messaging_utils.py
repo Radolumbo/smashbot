@@ -12,7 +12,7 @@ async def send_profile(channel, db_acc, user):
             SELECT
                 switch_tag, switch_code
             FROM 
-                player p
+                player.player p
             WHERE 
                 p.discord_id = %(discord_id)s''',
             params
@@ -41,9 +41,9 @@ async def send_profile(channel, db_acc, user):
                 pf.is_pocket,
                 pf.costume_number
             FROM 
-                fighter f
+                fighter.fighter f
             INNER JOIN 
-                player_fighter pf
+                player.player_fighter pf
             ON 
                 pf.fighter_id = f.id
             WHERE 

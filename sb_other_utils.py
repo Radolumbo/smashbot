@@ -34,9 +34,9 @@ async def find_users_in_guild_by_switch_tag(db_acc, message, test_user_string, c
                 switch_tag,
                 discord_id 
             FROM
-                player p 
+                player.player p 
             INNER JOIN 
-                guild_member g 
+                player.guild_member g
                 ON p.discord_id = g.player_discord_id 
             WHERE 
                 g.guild_id=%(guild_id)s''',

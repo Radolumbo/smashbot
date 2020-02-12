@@ -1,12 +1,12 @@
-CREATE TABLE fighter
+CREATE TABLE fighter.fighter
 (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name NVARCHAR(255) NULL, 
+    id SERIAL  PRIMARY KEY,
+    name VARCHAR(255) NULL, 
     weight INT NULL,
     echo_of_id INT NULL
 );
 
-INSERT INTO fighter
+INSERT INTO fighter.fighter
     (name)
 VALUES
     ('Mario'), 
@@ -84,58 +84,65 @@ VALUES
     ('Isabelle'), 
     ('Incineroar');
 
-UPDATE fighter f1
-JOIN fighter f2
+UPDATE fighter.fighter f1
 SET 
-    f1.echo_of_id = f2.id
+    echo_of_id = f2.id
+FROM
+    fighter.fighter f2
 WHERE
     f1.name = 'Dark Samus' AND
     f2.name = 'Samus';
 
-UPDATE fighter f1
-JOIN fighter f2
+UPDATE fighter.fighter f1
 SET 
-    f1.echo_of_id = f2.id
+    echo_of_id = f2.id
+FROM
+    fighter.fighter f2
 WHERE
     f1.name = 'Daisy' AND
     f2.name = 'Peach';
 
-UPDATE fighter f1
-JOIN fighter f2
+UPDATE fighter.fighter f1
 SET 
-    f1.echo_of_id = f2.id
+    echo_of_id = f2.id
+FROM
+    fighter.fighter f2
 WHERE
     f1.name = 'Lucina' AND
     f2.name = 'Marth';
 
-UPDATE fighter f1
-JOIN fighter f2
+UPDATE fighter.fighter f1
 SET 
-    f1.echo_of_id = f2.id
+    echo_of_id = f2.id
+FROM
+    fighter.fighter f2
 WHERE
     f1.name = 'Chrom' AND
     f2.name = 'Roy';
 
-UPDATE fighter f1
-JOIN fighter f2
+UPDATE fighter.fighter f1
 SET 
-    f1.echo_of_id = f2.id
+    echo_of_id = f2.id
+FROM
+    fighter.fighter f2
 WHERE
     f1.name = 'Dark Pit' AND
     f2.name = 'Pit';
 
-UPDATE fighter f1
-JOIN fighter f2
+UPDATE fighter.fighter f1
 SET 
-    f1.echo_of_id = f2.id
+    echo_of_id = f2.id
+FROM
+    fighter.fighter f2
 WHERE
     f1.name = 'Ken' AND
     f2.name = 'Ryu';
 
-UPDATE fighter f1
-JOIN fighter f2
+UPDATE fighter.fighter f1
 SET 
-    f1.echo_of_id = f2.id
+    echo_of_id = f2.id
+FROM
+    fighter.fighter f2
 WHERE
     f1.name = 'Richter' AND
     f2.name = 'Simon';
