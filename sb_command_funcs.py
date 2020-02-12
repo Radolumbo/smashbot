@@ -413,7 +413,7 @@ async def i_play(client, message, db_acc, send_message = True):
                     "name": fighter_name
                 }
             )
-        except dberr.IntegrityError as e:
+        except dberr.UniqueViolation as e:
             if send_message:
                 await channel.send('I already know you play {}, {}!'.format(fighter_name, author.mention))
             return

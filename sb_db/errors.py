@@ -1,7 +1,7 @@
 class Error(Exception):
     pass
 
-class IntegrityError(Error):
+class UniqueViolation(Error):
     pass
 
 class DatabaseError(Error):

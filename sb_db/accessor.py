@@ -16,7 +16,7 @@ class DBAccessor:
         # Try once, if DB fails, will sleep + try again
         try:
             return self.__execute_impl(query, params, is_update)
-        except dberr.IntegrityError:
+        except dberr.UniqueViolation:
             raise
         except dberr.Error:
             time.sleep(.250)
@@ -37,12 +37,12 @@ class DBAccessor:
                 conn.commit()
             else:
                 return cursor.fetchall()
-        except psycopg2.DatabaseError as e:
-            raise dberr.DatabaseError from e
-        except psycopg2.IntegrityError as e:
+        except psycopg2.errors.UniqueViolation as e:
             if is_update:
                 conn.rollback()
-            raise dberr.IntegrityError
+            raise dberr.UniqueViolation
+        except psycopg2.DatabaseError as e:
+            raise dberr.DatabaseError from e
         except Exception as e:
             if is_update:
                 conn.rollback()
