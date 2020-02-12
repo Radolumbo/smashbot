@@ -15,11 +15,12 @@ from sb_db.utils import get_fighter_names
 import sb_db.errors as dberr
 from sb_constants import base_icon_url, DB_ERROR_MSG, SECRET_CONFIG_FILE, TEST_MODE, BASE_DIR, SNARKY_IPLAY_RESPONSES
 
+from google.cloud import secretmanager
 
-NSA_IS_WATCHING = {}
+client = secretmanager.SecretManagerServiceClient()
+path = client.secret_version_path("discord-smashbot", "super_secret_smashbot_dev_config" if TEST_MODE else "super_secret_smashbot_prod_config", "latest")
+NSA_IS_WATCHING = ujson.loads(client.access_secret_version(path).payload.data.decode("utf-8"))
 
-with open(SECRET_CONFIG_FILE) as json_file:  
-    NSA_IS_WATCHING = json.load(json_file)
 
 cloudinary.config( 
   cloud_name = NSA_IS_WATCHING["cloudinary_name"], 
