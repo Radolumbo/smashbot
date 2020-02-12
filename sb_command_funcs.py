@@ -181,7 +181,7 @@ async def update(client, message, db_acc):
         return
     try:
         db_acc.execute_update('''
-            UPDATE player
+            UPDATE player.player
                 ''' + update_stmt + '''
             WHERE 
                 discord_id = %(discord_id)s''',
@@ -472,15 +472,15 @@ async def i_main(client, message, db_acc):
                     player.player_fighter
                 SET
                     is_main      = %(set_main)s,
-                    is_pocket    = IF(%(set_main)s = true, false, is_pocket),
-                    is_true_main = IF(%(set_main)s = true, is_true_main, false)
+                    is_pocket    = CASE WHEN %(set_main)s THEN false ELSE is_pocket END,
+                    is_true_main = CASE WHEN %(set_main)s THEN is_true_main ELSE false END
                 WHERE 
                     player_discord_id = %(discord_id)s AND
                     fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
                     "discord_id": author.id,
                     "name": fighter_name,
-                    "set_main": 0 if remove_fighter else 1
+                    "set_main": not remove_fighter
                 }
             )
         except dberr.Error as e:
@@ -537,18 +537,18 @@ async def i_pocket(client, message, db_acc):
         try:
             db_acc.execute_update('''
                 UPDATE
-                    player_fighter
+                    player.player_fighter
                 SET
-                    is_main      = IF(%(set_pocket)s = true, false, is_main),
+                    is_main      = CASE WHEN %(set_pocket)s THEN false ELSE is_main END,
                     is_pocket    = %(set_pocket)s,
-                    is_true_main = IF(%(set_pocket)s = true, false, is_true_main)
+                    is_true_main = CASE WHEN %(set_pocket)s THEN false ELSE is_true_main END
                 WHERE 
                     player_discord_id = %(discord_id)s AND
                     fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
                     "discord_id": author.id,
                     "name": fighter_name,
-                    "set_pocket": 0 if remove_fighter else 1
+                    "set_pocket": not remove_fighter
                 }
             )
         except dberr.Error as e:
