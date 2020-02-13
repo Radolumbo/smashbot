@@ -49,9 +49,9 @@ async def send_profile(channel, db_acc, user):
             WHERE 
                 pf.player_discord_id = %(discord_id)s
             ORDER BY
-                pf.is_true_main DESC,
-                pf.is_main DESC,
-                pf.is_pocket DESC,
+                CASE WHEN pf.is_true_main THEN 1 ELSE 0 END DESC,
+                CASE WHEN pf.is_main THEN 1 ELSE 0 END DESC,
+                CASE WHEN pf.is_pocket THEN 1 ELSE 0 END DESC,
                 f.name''', 
             {
                 "discord_id": user.id
