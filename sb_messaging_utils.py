@@ -19,7 +19,7 @@ async def send_profile(channel, db_acc, user):
         )
     except dberr.Error as e:
         print(e)
-        await channel.send(DB_ERROR_MSG.format(user.id))
+        await channel.send(DB_ERROR_MSG.format(user.mention))
         raise
 
     if rows is None or len(rows) == 0:
@@ -59,7 +59,7 @@ async def send_profile(channel, db_acc, user):
         )
     except dberr.Error as e:
         print(e)
-        await channel.send(DB_ERROR_MSG.format(user.id))
+        await channel.send(DB_ERROR_MSG.format(user.mention))
         raise
 
     fighters = [
