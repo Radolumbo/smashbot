@@ -87,20 +87,21 @@ async def register(client, message, db_acc):
     tokens = message.content.split(' ')
 
     # First time registration, wrong number of arguments
-    if(not is_reg and len(tokens) != 3):
-        await channel.send('8!register usage: 8!register switch_tag switch_code')
+    if(not is_reg and len(tokens) > 3 or len(tokens) < 2):
+        await channel.send('8!register usage: 8!register switch_tag switch_code (optional)')
         return
     # First time registration, wrong switch code format
     #TODO: use regex to enforce more rigid structure
-    elif(not is_reg and not tokens[2].lower().startswith('sw-')):
+    elif(not is_reg and len(tokens) == 3 and not tokens[2].lower().startswith('sw-')):
         await channel.send('Note: Switch code should look like SW-####-####-####')
         return
     # First time registration, correct input
     elif(not is_reg):
         tag = tokens[1]
-        code = tokens[2].upper()
-        await channel.send('Registering {} as {} with Switch code {}. Is this good? (Y/N)' \
-            .format(author.mention, tag, code))
+        code = None
+        if len(tokens) == 3:
+            code = tokens[2].upper()
+        await channel.send(f'Registering {author.mention} as {tag}{f" with Switch code {code}" if code else ""}. Is this good? (Y/N)')
 
         def check(m):
             return m.author == author and m.channel == channel
