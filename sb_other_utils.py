@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from sb_db.utils import get_fighter_names
 import sb_db.errors as dberr
-from sb_constants import base_icon_url, DB_ERROR_MSG, SECRET_CONFIG_FILE, TEST_MODE, BASE_DIR, SNARKY_IPLAY_RESPONSES
+from sb_constants import base_icon_url, DB_ERROR_MSG, TEST_MODE, BASE_DIR, SNARKY_IPLAY_RESPONSES
 
 from google.cloud import secretmanager
 

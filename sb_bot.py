@@ -13,7 +13,6 @@ import ujson
 
 from google.cloud import secretmanager
 
-
 command_prefix = "8!"
 
 if TEST_MODE:
