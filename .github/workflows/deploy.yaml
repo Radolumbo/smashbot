@@ -24,3 +24,7 @@ jobs:
         gcloud auth configure-docker
         docker build -t gcr.io/discord-smashbot/smashbot:latest .
         docker push gcr.io/discord-smashbot/smashbot:latest
+    - name: Restart VM with latest docker image
+      run: |
+        gcloud compute instances stop smashbot-container-vm
+        gcloud compute instances start smashbot-container-vm
