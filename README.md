@@ -9,11 +9,11 @@ This repo is automatically deployed to a Google Cloud Compute VM every time mast
 **Command**|**Description**
 :-----|:-----
 8!register switch\_tag switch\_code|Register in player list
-8!update tag|code value|Update profile attributes
+8!update tag\|code value|Update profile attributes
 8!playerlist|List players in server
-8!profile @mention|discord\_name|switch\_tag|View profile of user (omit to view self)
-8!whois @mention|discord\_name|switch\_tag|Same as profile
-8!imain|ipocket|iplay add|remove fighter|Add/remove a fighter to/from your repertoire
+8!profile @mention\|discord\_name\|switch\_tag|View profile of user (omit to view self)
+8!whois @mention\|discord\_name\|switch\_tag|Same as profile
+8!imain\|ipocket\|iplay add\|remove fighter|Add/remove a fighter to/from your repertoire
 8!remove fighter|Removes a fighter from your repertoire
 8!whoplays fighter|Find players in this server who use a fighter
 8!fighter fighter|View details/costumes for a fighter
