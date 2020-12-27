@@ -22,5 +22,5 @@ jobs:
     - name: Build and deploy docker image to GCR
       run: |
         gcloud auth configure-docker
-        docker build -t gcr.io/discord-smashbot/smashbot:latest
+        docker build -t gcr.io/discord-smashbot/smashbot:latest .
         docker push gcr.io/discord-smashbot/smashbot:latest
