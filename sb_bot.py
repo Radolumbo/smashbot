@@ -24,7 +24,8 @@ NSA_IS_WATCHING = ujson.loads(client.access_secret_version(path).payload.data.de
 
 db_accessor = DBAccessor(NSA_IS_WATCHING["db_host"], NSA_IS_WATCHING["db_name"], NSA_IS_WATCHING["db_port"], NSA_IS_WATCHING["db_user"], NSA_IS_WATCHING["db_pass"])
 
-client = discord.Client() 
+intents = discord.Intents(messages=True, members=True, guilds=True, reactions=True)
+client = discord.Client(intents=intents) 
 
 command_center = CommandCenter(db_accessor, client)
 command_center.register_command(Command(       "help",         funcs.help))

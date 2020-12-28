@@ -604,11 +604,9 @@ async def who_plays(client, message, db_acc):
             }
         )
 
-      #  msg = 'The following users play {}:\n\n'.format(fighter_name)
         msg = ''
 
-        # Gross but cool list generators to concatenate user names
-        users = [message.guild.get_member(int(row["discord_id"])) for row in rows]
+        users = [ message.guild.get_member(int(row["discord_id"])) for row in rows ]
         msg += ', '.join([user.display_name for user in users])
 
     except dberr.Error as e:
@@ -617,11 +615,8 @@ async def who_plays(client, message, db_acc):
         raise
     
     embed = discord.Embed(color=embed_color, description="No one." if msg == '' else msg)
-    # Regex to remove ALL special characters from fighter name, then create url
-    # Example: Pokemon Trainer becomes Pokmon Trainer due to special e
     embed.set_author(name = "{} Players".format(fighter_name), icon_url=fighter_icon_url(fighter_name))
     
-    #embed.add_field(name='', value=tag, inline=True)
     await channel.send(embed=embed)
 
 async def fighter_info(client, message, db_acc):
@@ -656,11 +651,8 @@ async def fighter_info(client, message, db_acc):
 
     embed = discord.Embed(color=embed_color, description="{} details...".format(fighter_name))
     embed.set_image(url=amalgam_url)
-    # Regex to remove ALL special characters from fighter name, then create url
-    # Example: Pokemon Trainer becomes Pokmon Trainer due to special e
     embed.set_author(name = "{}".format(fighter_name), icon_url=fighter_icon_url(fighter_name, 0))
 
-    #embed.add_field(name='', value=tag, inline=True)
     await channel.send(embed=embed)
 
 async def olimar_is_cool(client, message, db_acc):
