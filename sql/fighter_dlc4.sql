@@ -1,4 +1,5 @@
 INSERT INTO fighter.fighter
     (name)
-VALUES
-    ('Banjo & Kazooie');
+SELECT
+    'Banjo & Kazooie'
+WHERE NOT EXISTS (SELECT 1 FROM fighter.fighter WHERE name = 'Banjo & Kazooie');

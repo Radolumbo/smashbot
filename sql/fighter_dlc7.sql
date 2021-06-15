@@ -1,4 +1,5 @@
 INSERT INTO fighter.fighter
     (name)
-VALUES
-    ('Min Min');
+SELECT
+    'Min Min'
+WHERE NOT EXISTS (SELECT 1 FROM fighter.fighter WHERE name = 'Min Min');

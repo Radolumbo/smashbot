@@ -3,4 +3,6 @@ SELECT
     id,
     'Seph'
 FROM fighter.fighter
-WHERE name = 'Sephiroth';
+WHERE
+    name = 'Sephiroth' AND
+    NOT EXISTS (SELECT 1 FROM fighter.fighter_alias WHERE alias = 'Seph');
