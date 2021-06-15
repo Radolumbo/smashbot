@@ -2,8 +2,13 @@
 ## Contributing
 Contact me or open a PR if you'd like to contribute to this project.
 
+## Developing
+Run `bootstrap.sh` which is an idempotent way of setting up your development environment.
+
+As it is currently written, you will need to run as a service account with access to secrets in my GCP project.
+
 ## CI/CD
-This repo is automatically deployed to a Google Cloud Compute VM every time master is pushed. Unfortunately, this currently results in some downtime as the VM is stopped and restarted. I'm running this thing out of pocket at the moment, so haven't implemented any kind of High Availability functionality. 
+This repo is automatically deployed to a Google Cloud Compute VM every time master is pushed. Unfortunately, this currently results in some downtime as the VM is stopped and restarted. I'm running this thing out of pocket at the moment, so haven't implemented any kind of High Availability functionality.
 
 ## Commands
 **Command**|**Description**
