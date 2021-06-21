@@ -50,7 +50,7 @@ async def help(client, message, db_acc):
     if not isinstance(channel, discord.DMChannel):
         embed.set_footer(text='Don\'t clutter your channel!  DM me to run commands.')
     await channel.send(embed = embed)
-    
+
 
 async def register(client, message, db_acc):
     channel = message.channel
@@ -59,12 +59,12 @@ async def register(client, message, db_acc):
     # Verify user hasn't registered for this server
     try:
         record = db_acc.execute('''
-            SELECT 
+            SELECT
                 COUNT(1) AS registered
-            FROM 
+            FROM
                 player.guild_member
-            WHERE 
-                player_discord_id = %(discord_id)s AND 
+            WHERE
+                player_discord_id = %(discord_id)s AND
                 guild_id = %(guild_id)s''',
             {
                 "discord_id": author.id,
@@ -107,7 +107,7 @@ async def register(client, message, db_acc):
             return m.author == author and m.channel == channel
         try:
             msg = await client.wait_for('message', check=check, timeout=15)
-            
+
             if(msg.content.lower() != 'y' and msg.content.lower() != 'yes' \
                  and msg.content.lower() != '8!y'  and msg.content.lower() != '8!yes'):
                 await channel.send('Not registering {}.'.format(author.mention))
@@ -115,8 +115,8 @@ async def register(client, message, db_acc):
 
             try:
                 db_acc.execute_update('''
-                    INSERT INTO 
-                        player.player (discord_id, switch_tag, switch_code) 
+                    INSERT INTO
+                        player.player (discord_id, switch_tag, switch_code)
                     VALUES
                         (%(discord_id)s, %(tag)s, %(code)s)''',
                     {
@@ -135,13 +135,13 @@ async def register(client, message, db_acc):
         except asyncio.TimeoutError:
             await channel.send('Time ran out to confirm. Try again, {}.'.format(author.mention))
             return
-    
+
     # Already registered or just registered, add them to this channel
     try:
         db_acc.execute_update('''
-            INSERT INTO 
-                player.guild_member (player_discord_id, guild_id) 
-            VALUES 
+            INSERT INTO
+                player.guild_member (player_discord_id, guild_id)
+            VALUES
                 (%(discord_id)s, %(guild_id)s)''',
             {
                 "discord_id": author.id,
@@ -184,7 +184,7 @@ async def update(client, message, db_acc):
         db_acc.execute_update('''
             UPDATE player.player
                 ''' + update_stmt + '''
-            WHERE 
+            WHERE
                 discord_id = %(discord_id)s''',
             {
                 "val": val,
@@ -196,7 +196,7 @@ async def update(client, message, db_acc):
         await channel.send(DB_ERROR_MSG.format(author.mention))
         raise
 
-    await channel.send('Updated {}\'s profile.'.format(author.mention))  
+    await channel.send('Updated {}\'s profile.'.format(author.mention))
 
 async def player_list(client, message, db_acc):
     channel = message.channel
@@ -205,14 +205,14 @@ async def player_list(client, message, db_acc):
 
     try:
         rows = db_acc.execute('''
-            SELECT 
-                discord_id, switch_tag, switch_code 
-            FROM 
-                player.player p 
-            INNER JOIN 
+            SELECT
+                discord_id, switch_tag, switch_code
+            FROM
+                player.player p
+            INNER JOIN
                 player.guild_member g
-                ON p.discord_id = g.player_discord_id 
-            WHERE 
+                ON p.discord_id = g.player_discord_id
+            WHERE
                 g.guild_id=%(guild_id)s''',
             {
                 "guild_id": channel.guild.id
@@ -222,7 +222,7 @@ async def player_list(client, message, db_acc):
         print(e)
         await channel.send(DB_ERROR_MSG.format(author.mention))
         raise
-    
+
     names = ''
     tags = ''
     codes = ''
@@ -230,9 +230,15 @@ async def player_list(client, message, db_acc):
     for row in rows:
         # TODO: guild is optional? maybe in PMs?
         #names += '{:<20}{:<22}\n'.format(message.guild.get_member(int(row[0])).display_name[:20], row[2])
-        names += '{}\n'.format(message.guild.get_member(int(row["discord_id"])).display_name)
-        #tags += '{}\n'.format(row[1])
-        codes += '{}\n'.format(row["switch_code"])
+        try:
+            names += '{}\n'.format(message.guild.get_member(int(row["discord_id"])).display_name)
+            #tags += '{}\n'.format(row[1])
+            codes += '{}\n'.format(row["switch_code"])
+        # Likely player no longer exists in server
+        except Exception as e:
+            print(e)
+            continue
+
 
     embed = discord.Embed(color=embed_color)
     embed.set_author(name='Players in {}'.format(message.guild))
@@ -250,7 +256,7 @@ async def profile(client, message, db_acc):
     mention = None
 
     tokens = message.content.split(' ')
-    
+
     # default to self, make sure no other args passed in
     if len(message.mentions) == 0 and len(tokens) == 1:
         mention = author
@@ -270,7 +276,7 @@ async def profile_no_mention(client, message, db_acc):
     author = message.author
 
     await channel.send('No mention included, looking up by Discord name...')
-    
+
 
     tokens = message.content.split(' ')
 
@@ -292,7 +298,7 @@ async def profile_no_mention(client, message, db_acc):
         user = message.guild.get_member(id)
         await msg_utils.send_profile(channel, db_acc, user)
 
-        
+
     sent_message = await channel.send('*Please click the magnifying glass to search by Switch tag instead*')
     await sent_message.add_reaction("🔎")
 
@@ -352,7 +358,7 @@ async def i_play(client, message, db_acc, send_message = True):
 
     if(tokens[1].lower() == "add"):
         fighter_name_start_idx = 2
-    elif(tokens[1].lower() == "remove"):    
+    elif(tokens[1].lower() == "remove"):
         fighter_name_start_idx = 2
         remove_fighter = True
 
@@ -372,14 +378,14 @@ async def i_play(client, message, db_acc, send_message = True):
         if send_message:
             await channel.send('Please register with 8!register first!')
         return
-    
+
     # Removing that you play this character
     if(remove_fighter):
         try:
             db_acc.execute_update('''
                 DELETE FROM
-                    player.player_fighter 
-                WHERE 
+                    player.player_fighter
+                WHERE
                     player_discord_id = %(discord_id)s AND
                     fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
@@ -394,20 +400,20 @@ async def i_play(client, message, db_acc, send_message = True):
             raise
         if send_message:
             await channel.send('{} does not play {}, okay.'.format(author.mention, fighter_name))
-    # Adding that you play this character   
+    # Adding that you play this character
     else:
         try:
             db_acc.execute_update('''
                 INSERT INTO
                     player.player_fighter (player_discord_id, fighter_id, is_main, is_true_main)
-                SELECT 
+                SELECT
                     %(discord_id)s,
                     id as fighter_id,
                     false,
                     false
                 FROM
                     fighter.fighter
-                WHERE 
+                WHERE
                     name=%(name)s''',
                 {
                     "discord_id": author.id,
@@ -423,7 +429,7 @@ async def i_play(client, message, db_acc, send_message = True):
             if send_message:
                 await channel.send(DB_ERROR_MSG.format(author.mention))
             raise
-        
+
         if send_message:
             await channel.send('Okay, noted that {} plays {}. {}'.format(author.mention, fighter_name, random_snarky_comment()))
 
@@ -445,7 +451,7 @@ async def i_main(client, message, db_acc):
 
     if(tokens[1].lower() == "add"):
         fighter_name_start_idx = 2
-    elif(tokens[1].lower() == "remove"):    
+    elif(tokens[1].lower() == "remove"):
         fighter_name_start_idx = 2
         remove_fighter = True
 
@@ -465,7 +471,7 @@ async def i_main(client, message, db_acc):
     if(not await is_registered(db_acc, author.id, channel)):
         await channel.send('Please register with 8!register first!')
         return
-    # Adding or removing that you main this character   
+    # Adding or removing that you main this character
     else:
         try:
             db_acc.execute_update('''
@@ -475,7 +481,7 @@ async def i_main(client, message, db_acc):
                     is_main      = %(set_main)s,
                     is_pocket    = CASE WHEN %(set_main)s THEN false ELSE is_pocket END,
                     is_true_main = CASE WHEN %(set_main)s THEN is_true_main ELSE false END
-                WHERE 
+                WHERE
                     player_discord_id = %(discord_id)s AND
                     fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
@@ -488,8 +494,8 @@ async def i_main(client, message, db_acc):
             print(e)
             await channel.send(DB_ERROR_MSG.format(author.mention))
             raise
-        
-        if remove_fighter: 
+
+        if remove_fighter:
             await channel.send('{0} does not main {1}, okay. If you want ' \
                            'to remove this character entirely, use 8!iplay remove {1}'.format(author.mention, fighter_name))
         else:
@@ -513,7 +519,7 @@ async def i_pocket(client, message, db_acc):
 
     if(tokens[1].lower() == "add"):
         fighter_name_start_idx = 2
-    elif(tokens[1].lower() == "remove"):    
+    elif(tokens[1].lower() == "remove"):
         fighter_name_start_idx = 2
         remove_fighter = True
 
@@ -533,7 +539,7 @@ async def i_pocket(client, message, db_acc):
     if(not await is_registered(db_acc, author.id, channel)):
         await channel.send('Please register with 8!register first!')
         return
-    # Adding or removing that you pocket this character   
+    # Adding or removing that you pocket this character
     else:
         try:
             db_acc.execute_update('''
@@ -543,7 +549,7 @@ async def i_pocket(client, message, db_acc):
                     is_main      = CASE WHEN %(set_pocket)s THEN false ELSE is_main END,
                     is_pocket    = %(set_pocket)s,
                     is_true_main = CASE WHEN %(set_pocket)s THEN false ELSE is_true_main END
-                WHERE 
+                WHERE
                     player_discord_id = %(discord_id)s AND
                     fighter_id = (SELECT id FROM fighter.fighter WHERE name=%(name)s)''',
                 {
@@ -556,8 +562,8 @@ async def i_pocket(client, message, db_acc):
             print(e)
             await channel.send(DB_ERROR_MSG.format(author.mention))
             raise
-        
-        if remove_fighter: 
+
+        if remove_fighter:
             await channel.send('{0} no longer pockets {1}. If you want ' \
                            'to remove this character entirely, use 8!iplay remove {1}'.format(author.mention, fighter_name))
         else:
@@ -582,7 +588,7 @@ async def who_plays(client, message, db_acc):
     if(confidence < 80):
         await channel.send('I\'m really not sure who {} is. Remember: 8!whoplays usage: 8!whoplays <character>'.format(test_fighter_string))
         return
-    
+
     try:
         rows = db_acc.execute('''
             SELECT
@@ -595,7 +601,7 @@ async def who_plays(client, message, db_acc):
             INNER JOIN
                 player.guild_member gm
                 ON gm.player_discord_id = pf.player_discord_id
-            WHERE 
+            WHERE
                 f.name=%(fighter_name)s AND
                 gm.guild_id = %(guild_id)s''',
             {
@@ -613,10 +619,10 @@ async def who_plays(client, message, db_acc):
         print(e)
         await channel.send(DB_ERROR_MSG.format(author.mention))
         raise
-    
+
     embed = discord.Embed(color=embed_color, description="No one." if msg == '' else msg)
     embed.set_author(name = "{} Players".format(fighter_name), icon_url=fighter_icon_url(fighter_name))
-    
+
     await channel.send(embed=embed)
 
 async def fighter_info(client, message, db_acc):
@@ -646,7 +652,7 @@ async def fighter_info(client, message, db_acc):
         }
         for num in range(0,8)
     ]
-    
+
     amalgam_url = create_stitched_image(fighter_alts)
 
     embed = discord.Embed(color=embed_color, description="{} details...".format(fighter_name))
