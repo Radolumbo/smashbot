@@ -11,11 +11,12 @@ class DBAccessor:
 
     def __init__(self, host, name, port, user, password):
         # Disabling sql access for now
-        raise dberr.DatabaseError("SQL access is disabled")
+        self.pool = None
         # self.pool = psycopg2.pool.SimpleConnectionPool(1, 10, database=name, user=user, password=password, host=host, port=port)
 
     def execute(self, query, params, is_update=False):
         # Try once, if DB fails, will sleep + try again
+        raise dberr.DatabaseError("SQL access is disabled")
         try:
             return self.__execute_impl(query, params, is_update)
         except dberr.UniqueViolation:
