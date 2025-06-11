@@ -10,6 +10,7 @@ from sb_constants import *
 from sb_db.accessor import DBAccessor
 import sys
 import ujson
+import sb_db.errors as dberr
 
 from google.cloud import secretmanager
 
@@ -74,7 +75,11 @@ async def on_message(message):
     # override message content with sanitized input
     message.content = command_string
     command_name =  message.content.split(' ')[0]
-    rc = await command_center.run_command(command_name, client, message)
+    try:
+        rc = await command_center.run_command(command_name, client, message)
+    except dberr.DatabaseError:
+        await channel.send("Commands that access the database are disabled because Rad doesn't want to spend money on a database right now.")
+        return
 
     if(rc == RC_COMMAND_DNE):
         await channel.send("Command not recognized, {}".format(author.mention))
