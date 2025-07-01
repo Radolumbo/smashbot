@@ -2,11 +2,19 @@ import discord
 import asyncio
 
 import sb_messaging_utils as msg_utils
-from sb_constants import embed_color, DB_ERROR_MSG, base_url
+from sb_constants import TEST_MODE, embed_color, DB_ERROR_MSG, base_url
 from sb_db.utils import is_registered
-from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag, random_snarky_comment, create_stitched_image
+from sb_other_utils import find_fighter, fighter_icon_url, find_users_in_guild_by_name, find_users_in_guild_by_switch_tag, random_snarky_comment, create_stitched_image, get_bot_user
 import sb_db.errors as dberr
 import random
+from openai import OpenAI
+from google.cloud import secretmanager
+import json
+
+client = secretmanager.SecretManagerServiceClient()
+path = client.secret_version_path("discord-smashbot", "super_secret_smashbot_dev_config" if TEST_MODE else "super_secret_smashbot_prod_config", "latest")
+response = client.access_secret_version(request={"name": path})
+NSA_IS_WATCHING = json.loads(response.payload.data.decode("utf-8"))
 
 help_commands = '''\
 8!register switch_tag switch_code
@@ -38,13 +46,15 @@ Marks you as not looking for a match
 Pings everyone looking for a match
 Self-explanatory\
 '''
-async def help(client, message, db_acc):
+async def help(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
+    bot_user = get_bot_user(client)
 
     embed = discord.Embed(color=embed_color)
     embed.set_author(name='Help Text')
-    embed.set_thumbnail(url=client.user.avatar_url)
+    if bot_user.avatar is not None:
+        embed.set_thumbnail(url=bot_user.avatar.url)
     embed.add_field(name='Command', value=help_commands, inline=True)
     embed.add_field(name='Description', value=help_descriptions, inline=True)
     if not isinstance(channel, discord.DMChannel):
@@ -52,8 +62,10 @@ async def help(client, message, db_acc):
     await channel.send(embed = embed)
 
 
-async def register(client, message, db_acc):
+async def register(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
+    # Make this smarter eventually, maybe. I'm rushing. (7/1/2025)
+    assert channel.guild is not None
     author = message.author
     record = None
     # Verify user hasn't registered for this server
@@ -154,7 +166,7 @@ async def register(client, message, db_acc):
         raise
     await channel.send('Registered {.author.mention} in this server!'.format(message))
 
-async def update(client, message, db_acc):
+async def update(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
 
@@ -198,8 +210,11 @@ async def update(client, message, db_acc):
 
     await channel.send('Updated {}\'s profile.'.format(author.mention))
 
-async def player_list(client, message, db_acc):
+async def player_list(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
+    # Make this smarter eventually, maybe. I'm rushing. (7/1/2025)
+    assert channel.guild is not None
+    assert message.guild is not None
     author = message.author
     rows = None
 
@@ -231,9 +246,11 @@ async def player_list(client, message, db_acc):
         # TODO: guild is optional? maybe in PMs?
         #names += '{:<20}{:<22}\n'.format(message.guild.get_member(int(row[0])).display_name[:20], row[2])
         try:
-            names += '{}\n'.format(message.guild.get_member(int(row["discord_id"])).display_name)
-            #tags += '{}\n'.format(row[1])
-            codes += '{}\n'.format(row["switch_code"])
+            member = message.guild.get_member(int(row["discord_id"]))
+            if member is not None:
+                names += '{}\n'.format(member.display_name)
+                #tags += '{}\n'.format(row[1])
+                codes += '{}\n'.format(row["switch_code"])
         # Likely player no longer exists in server
         except Exception as e:
             print(e)
@@ -242,14 +259,15 @@ async def player_list(client, message, db_acc):
 
     embed = discord.Embed(color=embed_color)
     embed.set_author(name='Players in {}'.format(message.guild))
-    embed.set_thumbnail(url=channel.guild.icon_url)
+    if channel.guild.icon is not None:
+        embed.set_thumbnail(url=channel.guild.icon.url)
     #embed.add_field(name='{:<45}{:<17}'.format('Name', 'Switch Code'), value='```{}```'.format(names), inline=True)
     embed.add_field(name='Name', value=names, inline=True)
     embed.add_field(name='Switch Code', value=codes, inline=True)
 
     await channel.send(embed=embed)
 
-async def profile(client, message, db_acc):
+async def profile(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
 
@@ -271,9 +289,12 @@ async def profile(client, message, db_acc):
         return
     await msg_utils.send_profile(channel, db_acc, mention)
 
-async def profile_no_mention(client, message, db_acc):
+async def profile_no_mention(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
+    # Make this smarter eventually, maybe. I'm rushing. (7/1/2025)
+    assert message.guild is not None
+    bot_user = get_bot_user(client)
 
     await channel.send('No mention included, looking up by Discord name...')
 
@@ -309,7 +330,7 @@ async def profile_no_mention(client, message, db_acc):
         reaction, user = await client.wait_for('reaction_add', timeout=20.0, check=check)
     # remove reaction on timeout, so user doesn't think they can still click it
     except asyncio.TimeoutError:
-        await sent_message.remove_reaction("🔎", client.user)
+        await sent_message.remove_reaction("🔎", bot_user)
     else:
         await channel.send('Searching by Switch tag...')
 
@@ -323,8 +344,9 @@ async def profile_no_mention(client, message, db_acc):
             user = message.guild.get_member(id)
             await msg_utils.send_profile(channel, db_acc, user)
 
-async def i_dont_play(client, message, db_acc):
+async def i_dont_play(client: discord.Client, message: discord.Message, db_acc, send_message = True):
     tokens = message.content.split(' ')
+    channel = message.channel
 
     if len(tokens) < 2:
         if send_message:
@@ -339,7 +361,7 @@ async def i_dont_play(client, message, db_acc):
 # send_message is a little hacky, but a VERY convenient
 # way to allow us to reuse "i play" to insert mains/pockets
 # when 8!imain or 8!ipocket is used before 8!iplay without spamming
-async def i_play(client, message, db_acc, send_message = True):
+async def i_play(client: discord.Client, message: discord.Message, db_acc, send_message = True):
     channel = message.channel
     author = message.author
 
@@ -433,7 +455,7 @@ async def i_play(client, message, db_acc, send_message = True):
         if send_message:
             await channel.send('Okay, noted that {} plays {}. {}'.format(author.mention, fighter_name, random_snarky_comment()))
 
-async def i_main(client, message, db_acc):
+async def i_main(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
 
@@ -501,7 +523,7 @@ async def i_main(client, message, db_acc):
         else:
             await channel.send('I see, so {} mains {}. {}'.format(author.mention, fighter_name, random_snarky_comment()))
 
-async def i_pocket(client, message, db_acc):
+async def i_pocket(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
 
@@ -569,8 +591,11 @@ async def i_pocket(client, message, db_acc):
         else:
             await channel.send('I see, so {} pockets {}. {}'.format(author.mention, fighter_name, random_snarky_comment()))
 
-async def who_plays(client, message, db_acc):
+async def who_plays(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
+    # Make this smarter eventually, maybe. I'm rushing. (7/1/2025)
+    assert channel.guild is not None
+    assert message.guild is not None
     author = message.author
 
     tokens = message.content.split(' ')
@@ -613,7 +638,7 @@ async def who_plays(client, message, db_acc):
         msg = ''
 
         users = [ message.guild.get_member(int(row["discord_id"])) for row in rows ]
-        msg += ', '.join([user.display_name for user in users])
+        msg += ', '.join([user.display_name for user in users if user is not None])
 
     except dberr.Error as e:
         print(e)
@@ -625,7 +650,7 @@ async def who_plays(client, message, db_acc):
 
     await channel.send(embed=embed)
 
-async def fighter_info(client, message, db_acc):
+async def fighter_info(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
 
@@ -661,159 +686,201 @@ async def fighter_info(client, message, db_acc):
 
     await channel.send(embed=embed)
 
-async def olimar_is_cool(client, message, db_acc):
+async def olimar_is_cool(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
-    await author.edit(nick="Dumb Idiot")
+    if isinstance(author, discord.Member):
+        await author.edit(nick="Dumb Idiot")
     await channel.send('You reap what you sow.')
 
-async def looking_for_match(client, message, db_acc):
+async def looking_for_match(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
+    # Make this smarter eventually, maybe. I'm rushing. (7/1/2025)
+    assert channel.guild is not None
     author = message.author
-    role = discord.utils.get(author.guild.roles, name="looking to smash")
+    role = discord.utils.get(channel.guild.roles, name="looking to smash")
     if role == None:
-        await author.guild.create_role(name="looking to smash", mentionable=True)
-        role = discord.utils.get(author.guild.roles, name="looking to smash")
-
-    await author.add_roles(role)
+        await channel.guild.create_role(name="looking to smash", mentionable=True)
+        role = discord.utils.get(channel.guild.roles, name="looking to smash")
+    if isinstance(author, discord.Member) and role is not None:
+        await author.add_roles(role)
     await channel.send('{} wants to be pinged for matches.'.format(author.mention))
 
 # TODO: combine this with above function
-async def not_looking_for_match(client, message, db_acc):
+async def not_looking_for_match(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
+    # Make this smarter eventually, maybe. I'm rushing. (7/1/2025)
+    assert channel.guild is not None
     author = message.author
-    role = discord.utils.get(author.guild.roles, name="looking to smash")
+    role = discord.utils.get(channel.guild.roles, name="looking to smash")
     if role == None:
-        await author.guild.create_role(name="looking to smash", mentionable=True)
-        role = discord.utils.get(author.guild.roles, name="looking to smash")
+        await channel.guild.create_role(name="looking to smash", mentionable=True)
+        role = discord.utils.get(channel.guild.roles, name="looking to smash")
 
-    await author.remove_roles(role)
+    if isinstance(author, discord.Member) and role is not None:
+        await author.remove_roles(role)
     await channel.send('{} does not want to be pinged for matches.'.format(author.mention))
 
-async def ping_match_lookers(client, message, db_acc):
+async def ping_match_lookers(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
+    # Make this smarter eventually, maybe. I'm rushing. (7/1/2025)
+    assert channel.guild is not None
     author = message.author
-    role = discord.utils.get(author.guild.roles, name="looking to smash")
+    role = discord.utils.get(channel.guild.roles, name="looking to smash")
     if role == None:
-        await author.guild.create_role(name="looking to smash", mentionable=True)
-        role = discord.utils.get(author.guild.roles, name="looking to smash")
+        await channel.guild.create_role(name="looking to smash", mentionable=True)
+        role = discord.utils.get(channel.guild.roles, name="looking to smash")
+    if role is not None:
+        await channel.send('{} is looking for a match! Who is {}?'.format(author.mention, role.mention))
+    else:
+        await channel.send('{} is looking for a match, but no one is looking to smash.'.format(author.mention))
 
-    await channel.send('{} is looking for a match! Who is {}?'.format(author.mention, role.mention))
-
-async def coin_flip(client, message, db_acc):
+async def coin_flip(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
 
     flip = random.randint(0, 1)
     embed = discord.Embed(color=embed_color)
-    embed.set_author(name = "Heads" if flip == 1 else "Tails", icon_url=client.user.avatar_url)
+    bot_user = get_bot_user(client)
+    embed.set_author(name = "Heads" if flip == 1 else "Tails", icon_url=bot_user.avatar.url if bot_user.avatar is not None else None)
     embed.set_image(url=base_url + 'c_thumb,w_75,g_face/' + ("yoshisumhead.gif" if flip == 1 else "yoshisumtail.gif"))
     await channel.send(embed=embed)
 
-saint_apologies = [
-  "Saint -- Please forgive me for dismissing your kindness. I love and respect you deeply. Love, Rad",
-  "Saint, Please forgive me for undermining your guidance. You're one of the best people I know. Respectfully, Rad",
-  "Dear saint, I truly apologize for forgetting how much you've done for me, and taking our relationship for granted, and mocking your advice. I hope you know that wasn't my intention. You're a saint in every sense of the word. Yours truly, Rad",
-  "Dear saint, It was wrong of me to taking our relationship for granted. You mean so much to me. Yours truly, Rad",
-  "Hey saint, I regret calling you a cunt. I hold you in the highest regard. Always, Rad",
-  "Saint -- I messed up by being overly sensitive, and calling you a cunt. I hope you know that wasn't my intention. You mean so much to me. Love, Rad",
-  "Saint, I never meant to forgetting how much you've done for me, and being overly sensitive. I hope you know that wasn't my intention. You're a saint in every sense of the word. With love, Rad",
-  "Dear saint, I wish I could take back being overly sensitive, and not appreciating your wisdom, and forgetting how much you've done for me. I hope you know that wasn't my intention. Your friendship is invaluable to me. Sincerely, Rad",
-  "Saint my friend, Please forgive me for not appreciating your wisdom, and undermining your guidance. I hope you know that wasn't my intention. I hold you in the highest regard. Love, Rad",
-  "Hey saint, I'm sorry for taking our relationship for granted, and getting defensive when I should have been grateful. I hope you know that wasn't my intention. I'm lucky to have you in my life. Sincerely, Rad",
-  "Hey saint, I truly apologize for undermining your guidance. I'm lucky to have you in my life. Respectfully, Rad",
-  "Hey saint, I hate that I undermining your guidance, and taking our relationship for granted, and calling you a cunt. I admire your strength and heart. Sincerely, Rad",
-  "Saint my friend, It was wrong of me to forgetting how much you've done for me. You're one of the best people I know. Always, Rad",
-  "Saint -- I'm sorry for taking our relationship for granted, and undermining your guidance, and getting defensive when I should have been grateful. You mean so much to me. Yours truly, Rad",
-  "Hey saint, I wish I could take back taking our relationship for granted, and dismissing your kindness, and getting defensive when I should have been grateful. I hope you know that wasn't my intention. You're a saint in every sense of the word. Sincerely, Rad",
-  "Dear saint, I never meant to mocking your advice, and being overly sensitive. I hope you know that wasn't my intention. I admire your strength and heart. Love, Rad",
-  "Saint, I'm sorry for getting defensive when I should have been grateful, and calling you a cunt, and not appreciating your wisdom. I hold you in the highest regard. Love, Rad",
-  "Saint, I feel awful about getting defensive when I should have been grateful, and dismissing your kindness. You're one of the best people I know. Respectfully, Rad",
-  "Saint -- I never meant to not appreciating your wisdom. You're a saint in every sense of the word. Sincerely, Rad",
-  "Saint -- I never meant to dismissing your kindness, and mocking your advice. You mean so much to me. With love, Rad",
-  "Dear saint, I hate that I mocking your advice, and not appreciating your wisdom, and forgetting how much you've done for me. I love and respect you deeply. Love, Rad",
-  "Saint my friend, I'm sorry for calling you a cunt, and being overly sensitive. Your friendship is invaluable to me. Love, Rad",
-  "Hey saint, I messed up by dismissing your kindness, and undermining your guidance. I'm lucky to have you in my life. Always, Rad",
-  "Saint my friend, It was wrong of me to being overly sensitive, and taking our relationship for granted. I hope you know that wasn't my intention. You're one of the best people I know. Always, Rad",
-  "Saint my friend, It was wrong of me to undermining your guidance, and forgetting how much you've done for me. You're wise beyond words and I appreciate you. Yours truly, Rad",
-  "Hey saint, I feel awful about being overly sensitive. I hope you know that wasn't my intention. You're a true friend and I don't say it enough. With love, Rad",
-  "Saint, I wish I could take back not appreciating your wisdom. You're a true friend and I don't say it enough. Respectfully, Rad",
-  "Hey saint, I'm sorry for being overly sensitive, and dismissing your kindness. You're a saint in every sense of the word. Sincerely, Rad",
-  "Dear saint, I wish I could take back calling you a cunt. I hope you know that wasn't my intention. I hold you in the highest regard. Yours truly, Rad",
-  "Hey saint, I wish I could take back getting defensive when I should have been grateful. You're one of the best people I know. Respectfully, Rad",
-  "Saint -- I regret getting defensive when I should have been grateful, and calling you a cunt. I hope you know that wasn't my intention. I love and respect you deeply. Sincerely, Rad",
-  "Saint -- I wish I could take back mocking your advice. You're wise beyond words and I appreciate you. Yours truly, Rad",
-  "Saint my friend, I'm sorry for taking our relationship for granted, and mocking your advice. I hope you know that wasn't my intention. You're a true friend and I don't say it enough. Always, Rad",
-  "Hey saint, I hate that I being overly sensitive, and not appreciating your wisdom. I hold you in the highest regard. Always, Rad",
-  "Saint, I truly apologize for calling you a cunt, and not listening when you were trying to help. You're wise beyond words and I appreciate you. Always, Rad",
-  "Saint my friend, I truly apologize for getting defensive when I should have been grateful, and undermining your guidance, and forgetting how much you've done for me. I admire your strength and heart. Yours truly, Rad",
-  "Saint, I never meant to calling you a cunt, and taking our relationship for granted. I hope you know that wasn't my intention. I hold you in the highest regard. Respectfully, Rad",
-  "Hey saint, I regret dismissing your kindness. You're one of the best people I know. With love, Rad",
-  "Dear saint, I regret undermining your guidance, and taking our relationship for granted, and not listening when you were trying to help. You're a true friend and I don't say it enough. Yours truly, Rad",
-  "Saint my friend, I regret forgetting how much you've done for me. I love and respect you deeply. Love, Rad",
-  "Saint -- I hate that I undermining your guidance. I hope you know that wasn't my intention. I'm lucky to have you in my life. Yours truly, Rad",
-  "Saint, I never meant to dismissing your kindness. I hope you know that wasn't my intention. I'm lucky to have you in my life. Sincerely, Rad",
-  "Dear saint, I wish I could take back not listening when you were trying to help, and being overly sensitive, and taking our relationship for granted. Your friendship is invaluable to me. Love, Rad",
-  "Saint, Please forgive me for mocking your advice, and not appreciating your wisdom, and not listening when you were trying to help. I hope you know that wasn't my intention. You mean so much to me. Yours truly, Rad",
-  "Saint -- I hate that I not appreciating your wisdom, and undermining your guidance. I hope you know that wasn't my intention. You mean so much to me. Yours truly, Rad",
-  "Hey saint, I hate that I forgetting how much you've done for me, and dismissing your kindness. You mean so much to me. Always, Rad",
-  "Saint my friend, I regret forgetting how much you've done for me. I hope you know that wasn't my intention. I love and respect you deeply. Sincerely, Rad",
-  "Dear saint, I hate that I dismissing your kindness, and not appreciating your wisdom. I'm lucky to have you in my life. Yours truly, Rad",
-  "Saint -- I messed up by forgetting how much you've done for me, and undermining your guidance. I hope you know that wasn't my intention. I admire your strength and heart. Respectfully, Rad",
-  "Saint, Please forgive me for getting defensive when I should have been grateful, and being overly sensitive, and not listening when you were trying to help. You're a true friend and I don't say it enough. Yours truly, Rad",
-  "Dear saint, It was wrong of me to taking our relationship for granted, and not listening when you were trying to help, and being overly sensitive. I hope you know that wasn't my intention. I hold you in the highest regard. With love, Rad",
-  "Saint -- I feel awful about taking our relationship for granted, and forgetting how much you've done for me, and getting defensive when I should have been grateful. Your friendship is invaluable to me. Sincerely, Rad",
-  "Hey saint, I regret mocking your advice, and undermining your guidance. I hope you know that wasn't my intention. I love and respect you deeply. Always, Rad",
-  "Saint -- I hate that I not listening when you were trying to help, and taking our relationship for granted. You're a true friend and I don't say it enough. Love, Rad",
-  "Saint my friend, I truly apologize for dismissing your kindness. I hold you in the highest regard. Sincerely, Rad",
-  "Saint my friend, I feel awful about calling you a cunt. You're a true friend and I don't say it enough. Yours truly, Rad",
-  "Saint my friend, I'm sorry for not appreciating your wisdom, and taking our relationship for granted. You're a saint in every sense of the word. Yours truly, Rad",
-  "Hey saint, I truly apologize for forgetting how much you've done for me. I hope you know that wasn't my intention. Your friendship is invaluable to me. Sincerely, Rad",
-  "Saint my friend, Please forgive me for getting defensive when I should have been grateful, and calling you a cunt. Your friendship is invaluable to me. Yours truly, Rad",
-  "Saint -- I messed up by not appreciating your wisdom, and not listening when you were trying to help, and getting defensive when I should have been grateful. You're one of the best people I know. Yours truly, Rad",
-  "Hey saint, Please forgive me for not appreciating your wisdom, and mocking your advice. I hope you know that wasn't my intention. I love and respect you deeply. Always, Rad",
-  "Saint my friend, Please forgive me for being overly sensitive, and not appreciating your wisdom, and dismissing your kindness. You're a true friend and I don't say it enough. Love, Rad",
-  "Saint -- I regret being overly sensitive, and calling you a cunt, and undermining your guidance. I'm lucky to have you in my life. Yours truly, Rad",
-  "Hey saint, I feel awful about forgetting how much you've done for me, and not appreciating your wisdom. You're a saint in every sense of the word. Respectfully, Rad",
-  "Saint, I feel awful about mocking your advice, and not appreciating your wisdom, and being overly sensitive. I hope you know that wasn't my intention. I'm lucky to have you in my life. Love, Rad",
-  "Saint -- I regret dismissing your kindness. I hope you know that wasn't my intention. I love and respect you deeply. Sincerely, Rad",
-  "Dear saint, I hate that I calling you a cunt. I admire your strength and heart. With love, Rad",
-  "Dear saint, I truly apologize for not listening when you were trying to help, and mocking your advice. You're wise beyond words and I appreciate you. With love, Rad",
-  "Saint, Please forgive me for dismissing your kindness. Your friendship is invaluable to me. Sincerely, Rad",
-  "Hey saint, I messed up by calling you a cunt, and taking our relationship for granted. You're a saint in every sense of the word. Sincerely, Rad",
-  "Saint, I'm sorry for not appreciating your wisdom, and forgetting how much you've done for me. I hope you know that wasn't my intention. I love and respect you deeply. Sincerely, Rad",
-  "Hey saint, I hate that I mocking your advice, and being overly sensitive. You're a true friend and I don't say it enough. Yours truly, Rad",
-  "Saint, I messed up by taking our relationship for granted, and being overly sensitive, and undermining your guidance. I hope you know that wasn't my intention. You're one of the best people I know. Love, Rad",
-  "Dear saint, Please forgive me for getting defensive when I should have been grateful. I hope you know that wasn't my intention. I hold you in the highest regard. Always, Rad",
-  "Hey saint, I truly apologize for being overly sensitive, and not appreciating your wisdom, and getting defensive when I should have been grateful. You're a saint in every sense of the word. Yours truly, Rad",
-  "Dear saint, I messed up by not appreciating your wisdom, and not listening when you were trying to help. Your friendship is invaluable to me. Respectfully, Rad",
-  "Saint, I wish I could take back not appreciating your wisdom. You're wise beyond words and I appreciate you. With love, Rad",
-  "Dear saint, I wish I could take back being overly sensitive, and not appreciating your wisdom. I hope you know that wasn't my intention. I hold you in the highest regard. Sincerely, Rad",
-  "Saint -- I truly apologize for undermining your guidance, and mocking your advice, and getting defensive when I should have been grateful. I hope you know that wasn't my intention. You're wise beyond words and I appreciate you. Yours truly, Rad",
-  "Saint -- It was wrong of me to not appreciating your wisdom. You mean so much to me. Respectfully, Rad",
-  "Dear saint, It was wrong of me to forgetting how much you've done for me, and not listening when you were trying to help, and undermining your guidance. You're wise beyond words and I appreciate you. Always, Rad",
-  "Saint, I truly apologize for mocking your advice. I hope you know that wasn't my intention. You're a true friend and I don't say it enough. Love, Rad",
-  "Saint, I truly apologize for dismissing your kindness, and taking our relationship for granted, and forgetting how much you've done for me. I hope you know that wasn't my intention. You mean so much to me. Sincerely, Rad",
-  "Saint -- It was wrong of me to getting defensive when I should have been grateful. You're one of the best people I know. Sincerely, Rad",
-  "Hey saint, It was wrong of me to getting defensive when I should have been grateful, and dismissing your kindness, and forgetting how much you've done for me. Your friendship is invaluable to me. Always, Rad",
-  "Hey saint, I messed up by dismissing your kindness. I admire your strength and heart. With love, Rad",
-  "Saint my friend, I hate that I getting defensive when I should have been grateful, and calling you a cunt, and undermining your guidance. You're a true friend and I don't say it enough. Love, Rad",
-  "Saint, I never meant to getting defensive when I should have been grateful, and taking our relationship for granted, and forgetting how much you've done for me. Your friendship is invaluable to me. With love, Rad",
-  "Saint, Please forgive me for forgetting how much you've done for me, and calling you a cunt. You're a saint in every sense of the word. With love, Rad",
-  "Hey saint, I hate that I not listening when you were trying to help, and mocking your advice, and not appreciating your wisdom. You're wise beyond words and I appreciate you. Sincerely, Rad",
-  "Hey saint, I messed up by not listening when you were trying to help, and getting defensive when I should have been grateful. You mean so much to me. Sincerely, Rad",
-  "Saint, I feel awful about taking our relationship for granted. I hope you know that wasn't my intention. You mean so much to me. Always, Rad",
-  "Saint, I feel awful about taking our relationship for granted, and being overly sensitive. You're wise beyond words and I appreciate you. Always, Rad",
-  "Saint my friend, I hate that I dismissing your kindness, and being overly sensitive. I hope you know that wasn't my intention. I hold you in the highest regard. Always, Rad",
-  "Saint my friend, Please forgive me for not appreciating your wisdom, and mocking your advice. I hold you in the highest regard. Yours truly, Rad",
-  "Saint -- Please forgive me for being overly sensitive. I hold you in the highest regard. Yours truly, Rad",
-  "Saint -- Please forgive me for forgetting how much you've done for me, and dismissing your kindness, and undermining your guidance. I hope you know that wasn't my intention. You're wise beyond words and I appreciate you. Love, Rad",
-  "Saint -- I wish I could take back calling you a cunt, and taking our relationship for granted, and being overly sensitive. I hope you know that wasn't my intention. I admire your strength and heart. Respectfully, Rad",
-  "Saint -- I truly apologize for mocking your advice, and not listening when you were trying to help, and dismissing your kindness. I hope you know that wasn't my intention. You're a true friend and I don't say it enough. With love, Rad",
-  "Saint -- I feel awful about not listening when you were trying to help. I'm lucky to have you in my life. Respectfully, Rad"
-]
-
-async def saint(client, message, db_acc):
+async def saint(client: discord.Client, message: discord.Message, db_acc):
     channel = message.channel
     author = message.author
-    await channel.send(random.choice(saint_apologies))
+    openai_client = OpenAI(api_key=NSA_IS_WATCHING["openapi_key"])
+    character = random.choice([
+        "Steve (Minecraft)",
+        "Pokémon Trainer (Pokémon)",
+        "Cloud (Final Fantasy)",
+        "Sora (Kingdom Hearts)",
+        "Sonic (Sonic the Hedgehog)",
+        "PAC-MAN (PAC-MAN)",
+        "Banjo & Kazooie (Banjo-Kazooie)",
+        "Sephiroth (Final Fantasy)",
+        "Samus (Metroid)",
+        "Ness (Earthbound)",
+        "Captain Falcon (F-Zero)",
+        "Mewtwo (Pokémon)",
+        "Yoshi (Yoshi)",
+        "King K. Rool (Donkey Kong)",
+        "Joker (Persona)",
+        "Ridley (Metroid)",
+        "Kazuya (Tekken)",
+        "Bowser (Super Mario Bros.)",
+        "Mr. Game & Watch (Game & Watch)",
+        "Hero (Dragon Quest)",
+        "Donkey Kong (Donkey Kong)",
+        "Snake (Metal Gear)",
+        "Bowser Jr. (Super Mario Bros.)",
+        "Duck Hunt (Duck Hunt)",
+        "Link (The Legend of Zelda)",
+        "Ice Climbers (Ice Climber)",
+        "Greninja (Pokémon)",
+        "Robin (Fire Emblem)",
+        "Kirby (Kirby)",
+        "Ryu (Street Fighter)",
+        "Zelda (The Legend of Zelda)",
+        "Mega Man (Mega Man)",
+        "Pikachu (Pokémon)",
+        "Simon (Castlevania)",
+        "Peach (Super Mario Bros.)",
+        "Marth (Fire Emblem)",
+        "Sheik (The Legend of Zelda)",
+        "Lucario (Pokémon)",
+        "Villager (Animal Crossing)",
+        "Wario (WarioWare)",
+        "Meta Knight (Kirby)",
+        "Mii Fighters (Mii)",
+        "Ken (Street Fighter)",
+        "Luigi (Super Mario Bros.)",
+        "Isabelle (Animal Crossing)",
+        "Shulk (Xenoblade Chronicles)",
+        "Terry (Fatal Fury)",
+        "King Dedede (Kirby)",
+        "Pit (Kid Icarus)",
+        "Wii Fit Trainer (Wii Fit)",
+        "Ganondorf (The Legend of Zelda)",
+        "Piranha Plant (Super Mario Bros.)",
+        "Inkling (Splatoon)",
+        "Rosalina & Luma (Super Mario Bros.)",
+        "Olimar (Pikmin)",
+        "Diddy Kong (Donkey Kong)",
+        "Ike (Fire Emblem)",
+        "Palutena (Kid Icarus)",
+        "Bayonetta (Bayonetta)",
+        "Mario (Super Mario Bros.)",
+        "Pyra/Mythra (Xenoblade Chronicles)",
+        "Byleth (Fire Emblem)",
+        "Dark Samus (Metroid)",
+        "Lucina (Fire Emblem)",
+        "Little Mac (Punch Out!!)",
+        "Toon Link (The Legend of Zelda)",
+        "Ritcher (Castlevania)",
+        "Dark Pit (Kid Icarus)",
+        "R.O.B. (R.O.B.)",
+        "Falco (StarFox)",
+        "Wolf (StarFox)",
+        "Young Link (The Legend of Zelda)",
+        "Pichu (Pokémon)",
+        "Incineroar (Pokémon)",
+        "Chrom (Fire Emblem)",
+        "Fox (StarFox)",
+        "Zero Suit Samus (Metroid)",
+        "Daisy (Super Mario Bros.)",
+        "Lucas (Earthbound)",
+        "Jigglypuff (Pokémon)",
+        "Min Min (ARMS)",
+        "Roy (Fire Emblem)",
+        "Dr. Mario (Super Mario Bros.)",
+        "Corrin (Fire Emblem)"
+    ])
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": ("You are an apology generator for Rad to send apologies to saint. Rad loves saint with "
+            "all of his heart, and he wants to make it up to him. Rad is a very nice person, and he wants to make it up to saint "
+            "that he called him a cunt that one time and also in general maybe being overly sensitive to saint's comments. "
+            "Rad thinks saint is a great gamer and respects him as a player and person. Keep apologies relatively short, maybe 1 to 3 sentences. "
+            "Each apology should be from the perspective of a character from Super Smash Bros. Ultimate who is explaining to saint how sorry Rad is. "
+            "Specifically, it should be from the perspective of a character who is a friend of Rad's and who is explaining to saint how sorry Rad is. "
+            "Your output should just be the apology, no other text or quotes or anything like that. The language should reflect the "
+            "character's personality, style, and experiences from their games. Sign the apology with the character's name, e.g. 'Sincerely, Mario'."
+            "E.G. if it's Mario, there should be an Italian vibe. If it's Kirby, it should just be the word 'poyo' over and over again. And so on.")},
+            {"role": "user", "content": "Generate an apology from the perspective of " + character + "."}
+        ],
+        temperature=0.9,
+    )
+    await channel.send(response.choices[0].message.content)
+
+# async def ai_chat(client: discord.Client, message: discord.Message, db_acc):
+#     channel = message.channel
+#     author = message.author
+#     bot_user = get_bot_user(client)
+
+#     prompt = " ".join(message.content.split(" ")[1:])
+#     if prompt == "":
+#         await channel.send("You didn't give me anything to do. I'm not a mind reader.")
+#         return
+
+#     openai_client = OpenAI(api_key=NSA_IS_WATCHING["openapi_key"])
+
+#     messages = [msg async for msg in channel.history(limit=1000)]
+#     messages = [msg for msg in messages if msg.author != bot_user]
+
+#     print(messages)
+
+#     response = openai_client.chat.completions.create(
+#         model="gpt-4o-mini",
+#         messages=[
+#             {"role": "system", "content": ("You are an impartial and helpful assistant. You are operating "
+#             "in a discord server that is a group of online friends who chat. "
+#             "Keep your messages relatively short, never more than a paragraph, and only that much if the situation calls for it. "
+#             "Do not ask questions, just answer the user's prompt.")},
+#             {"role": "user", "content": "The last 1000 messages in this channel are: " + "\n".join([f"{msg.author}: {msg.content}" for msg in messages])},
+#             {"role": "user", "content": prompt}
+#         ],
+#     )
+
+#     await channel.send(response.choices[0].message.content)

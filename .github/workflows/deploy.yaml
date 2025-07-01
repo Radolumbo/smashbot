@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Configure gcloud with deployer service account creds
-      uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      uses: google-github-actions/setup-gcloud@v2
       with:
-        version: '290.0.1'
+        version: '>= 363.0.0'
         project_id: discord-smashbot
         service_account_key: ${{ secrets.DEPLOYER_SVC_KEY }}
         export_default_credentials: true
