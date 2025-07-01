@@ -869,8 +869,6 @@ async def saint(client: discord.Client, message: discord.Message, db_acc):
 #     messages = [msg async for msg in channel.history(limit=1000)]
 #     messages = [msg for msg in messages if msg.author != bot_user]
 
-#     print(messages)
-
 #     response = openai_client.chat.completions.create(
 #         model="gpt-4o-mini",
 #         messages=[
