@@ -29,7 +29,7 @@ jobs:
       run: |
         docker build -t gcr.io/discord-smashbot/smashbot:latest .
         docker push gcr.io/discord-smashbot/smashbot:latest
-    - name: Restart VM with latest docker image
+    - name: Restart VM to pick up latest docker image
       run: |
         gcloud compute instances stop smashbot-container-vm --zone=us-central1-a
         gcloud compute instances start smashbot-container-vm --zone=us-central1-a
