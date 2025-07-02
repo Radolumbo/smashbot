@@ -22,7 +22,7 @@ jobs:
         fetch-depth: 2
     - name: Build and deploy docker image to GCR
       run: |
-        gcloud auth configure-docker
+        gcloud auth configure-docker gcr.io
         docker build -t gcr.io/discord-smashbot/smashbot:latest .
         docker push gcr.io/discord-smashbot/smashbot:latest
     - name: Restart VM with latest docker image
