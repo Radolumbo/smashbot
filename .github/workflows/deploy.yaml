@@ -10,7 +10,10 @@ jobs:
     name: Build and deploy
     runs-on: ubuntu-latest
     steps:
-    - name: auth
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 2
+    - name: Auth to GCP
       uses: google-github-actions/auth@v2
       with:
         credentials_json: '${{ secrets.DEPLOYER_SVC_KEY }}'
@@ -19,12 +22,11 @@ jobs:
       with:
         version: '>= 363.0.0'
         project_id: discord-smashbot
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 2
-    - name: Build and deploy docker image to GCR
+    - name: Auth to gcr.io
       run: |
         gcloud auth configure-docker gcr.io
+    - name: Build and deploy docker image to GCR
+      run: |
         docker build -t gcr.io/discord-smashbot/smashbot:latest .
         docker push gcr.io/discord-smashbot/smashbot:latest
     - name: Restart VM with latest docker image
