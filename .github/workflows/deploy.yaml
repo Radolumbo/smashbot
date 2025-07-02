@@ -10,13 +10,15 @@ jobs:
     name: Build and deploy
     runs-on: ubuntu-latest
     steps:
-    - name: Configure gcloud with deployer service account creds
+    - name: auth
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.DEPLOYER_SVC_KEY }}'
+    - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       with:
         version: '>= 363.0.0'
         project_id: discord-smashbot
-        service_account_key: ${{ secrets.DEPLOYER_SVC_KEY }}
-        export_default_credentials: true
     - uses: actions/checkout@v2
       with:
         fetch-depth: 2
